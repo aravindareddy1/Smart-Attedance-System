@@ -12,7 +12,10 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'default-dev-key-please-change-in-production-7721')
     
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', f"sqlite:///{basedir / 'smart_attendance.db'}")
+    _raw_db_url = os.getenv('DATABASE_URL')
+    if _raw_db_url and _raw_db_url.startswith('postgres://'):
+        _raw_db_url = _raw_db_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = _raw_db_url or f"sqlite:///{basedir / 'smart_attendance.db'}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Attendance settings
@@ -84,3 +87,4 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
