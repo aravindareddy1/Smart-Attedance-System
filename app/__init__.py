@@ -93,3 +93,4 @@ def create_app(config_name: str = 'default') -> Flask:
 
     return app
 
+

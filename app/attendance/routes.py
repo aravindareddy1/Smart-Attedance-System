@@ -2,7 +2,7 @@ from datetime import datetime, date, timezone
 from flask import render_template, redirect, url_for, flash, request, jsonify, abort
 from flask_login import login_required, current_user
 from app.attendance import bp
-from app.extensions import db
+from app.extensions import db, csrf
 from app.decorators import teacher_required
 from app.models import (
     AttendanceSession, AttendanceRecord, AttendanceAdjustment,
@@ -148,6 +148,7 @@ def live_attendance(session_id):
 
 
 @bp.route('/api/frame/<int:session_id>', methods=['POST'])
+@csrf.exempt
 @login_required
 def api_process_frame(session_id):
     data = request.get_json() or {}
@@ -314,3 +315,4 @@ def records():
 
 import base64
 import cv2
+

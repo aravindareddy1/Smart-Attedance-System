@@ -8,7 +8,19 @@ services:
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: SECRET_KEY
-        generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-attendance-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: https://aravindareddy1.github.io
+
+databases:
+  - name: smart-attendance-db
+    plan: free
+    databaseName: smart_attendance
+    user: attendance_admin
