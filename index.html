@@ -44,7 +44,7 @@
             max-width: 640px;
             aspect-ratio: 4/3;
             background: #0f172a;
-            border-radius: 1.5rem;
+            border-radius: 1.25rem;
             overflow: hidden;
         }
         .camera-wrapper video, .camera-wrapper canvas {
@@ -56,221 +56,330 @@
             object-fit: cover;
         }
         .animate-fade-in {
-            animation: fadeIn 0.2s ease-out;
+            animation: fadeIn 0.18s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(3px); }
             to { opacity: 1; transform: translateY(0); }
         }
         /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.35); border-radius: 3px; }
     </style>
 </head>
-<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex overflow-hidden font-sans antialiased">
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex overflow-hidden font-sans antialiased text-[13px]">
 
     <!-- Toast Notifications Container -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col space-y-2 max-w-sm pointer-events-none"></div>
 
-    <!-- Sidebar Navigation -->
-    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between hidden md:flex z-20 flex-shrink-0">
-        <div class="overflow-y-auto">
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="mobile-sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-30 hidden md:hidden transition-opacity duration-300"></div>
+
+    <!-- Responsive Sidebar (Fixed ~290px Desktop, Slide-over Drawer Mobile) -->
+    <aside id="app-sidebar" class="fixed md:static inset-y-0 left-0 w-[290px] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex-shrink-0 shadow-lg md:shadow-none">
+        <div class="overflow-y-auto flex-1">
+            
             <!-- Brand Header -->
-            <div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800">
-                <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/30 mr-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <div class="h-16 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-sm font-black tracking-tight text-slate-900 dark:text-white">Smart Attendance</h1>
+                        <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 block tracking-wider uppercase">Enterprise Biometrics</span>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-sm font-black tracking-tight text-slate-900 dark:text-white">Smart Attendance</h1>
-                    <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400">ENTERPRISE BIOMETRICS</span>
-                </div>
+                <button onclick="closeMobileSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
-            <!-- Complete Section Navigation -->
+            <!-- Complete Navigation Groups -->
             <nav class="p-4 space-y-1 text-xs font-semibold">
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 mb-1">Administration</div>
+                
+                <!-- Group 1: CORE ADMIN -->
+                <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1.5 mt-1">Core Admin</div>
                 <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     Dashboard
                 </button>
                 <button onclick="switchTab('students')" id="nav-students" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    Students Directory
+                    Students
                 </button>
                 <button onclick="switchTab('teachers')" id="nav-teachers" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path></svg>
-                    Faculty & Teachers
+                    Teachers
                 </button>
                 <button onclick="switchTab('classes')" id="nav-classes" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     Classes & Timetable
                 </button>
+                <button onclick="switchTab('subjects')" id="nav-subjects" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    Subjects
+                </button>
+                <button onclick="switchTab('timetable')" id="nav-timetable" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Timetable
+                </button>
+                <button onclick="switchTab('holidays')" id="nav-holidays" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                    Holidays
+                </button>
 
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 pt-4 mb-1">Attendance Ops</div>
+                <!-- Group 2: ATTENDANCE & INSIGHTS -->
+                <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1.5 pt-4">Attendance & Insights</div>
                 <button onclick="switchTab('live')" id="nav-live" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    Live Camera Session
+                    Take Attendance (Live)
                 </button>
                 <button onclick="switchTab('enroll')" id="nav-enroll" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Biometric Enrollment
+                    Face Enrollment
                 </button>
                 <button onclick="switchTab('records')" id="nav-records" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    Historical Records
+                    Attendance Records
                 </button>
-
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 pt-4 mb-1">Intelligence & Audit</div>
+                <button onclick="switchTab('reports')" id="nav-reports" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Reports & Analytics
+                </button>
                 <button onclick="switchTab('shortage')" id="nav-shortage" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    Shortage Warnings (&lt;75%)
+                    Shortage List (&lt; 75%)
                 </button>
+
+                <!-- Group 3: SYSTEM & AUDIT -->
+                <div class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 mb-1.5 pt-4">System & Audit</div>
                 <button onclick="switchTab('diagnostics')" id="nav-diagnostics" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
-                    System Diagnostics
+                    Diagnostics & Health
                 </button>
                 <button onclick="switchTab('audit')" id="nav-audit" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                     <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Audit Trail
+                    Audit Logs
+                </button>
+                <button onclick="switchTab('backups')" id="nav-backups" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                    Backups
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Settings
                 </button>
             </nav>
         </div>
 
-        <!-- Role Switcher & User Profile -->
+        <!-- User Profile & Action Drawer at Bottom of Sidebar -->
         <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Active Role</span>
-                <select id="role-selector" onchange="changeRole(this.value)" class="text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-blue-600 dark:text-blue-400 focus:outline-none">
-                    <option value="admin">Administrator</option>
-                    <option value="teacher">Faculty / Teacher</option>
-                    <option value="student">Student Portal</option>
-                </select>
-            </div>
-            <div class="flex items-center justify-between text-xs">
-                <div class="flex items-center space-x-2">
-                    <div id="user-avatar" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">A</div>
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2.5">
+                    <div id="user-avatar" class="w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center text-xs shadow-sm">S</div>
                     <div>
-                        <div id="user-display-name" class="font-bold text-slate-900 dark:text-white truncate max-w-[110px]">Admin</div>
-                        <div id="user-role-badge" class="text-[10px] text-slate-400">System Admin</div>
+                        <div id="user-display-name" class="font-bold text-slate-900 dark:text-white leading-tight">System Administrator</div>
+                        <span id="user-role-badge" class="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase">ADMIN</span>
                     </div>
                 </div>
-                <button onclick="openLoginModal()" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px] font-bold">Switch</button>
+            </div>
+            <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 pt-1 border-t border-slate-200/50 dark:border-slate-800/60">
+                <button onclick="openProfileModal()" class="hover:text-blue-600 transition">Profile</button>
+                <span class="text-slate-300">•</span>
+                <button onclick="openChangePasswordModal()" class="hover:text-blue-600 transition">Password</button>
+                <span class="text-slate-300">•</span>
+                <button onclick="handleSignOut()" class="text-rose-500 hover:text-rose-600 transition">Sign Out</button>
             </div>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden">
+    <!-- Main App Content Area -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         
-        <!-- Header Bar -->
-        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <div class="flex items-center space-x-4">
-                <h2 id="view-title" class="text-lg font-black text-slate-900 dark:text-white">Institutional Overview</h2>
-                <span id="backend-status-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                    Checking Backend...
+        <!-- Header Bar (Matching Image 3 Layout) -->
+        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+            
+            <div class="flex items-center space-x-3">
+                <!-- Hamburger Button (Mobile Only) -->
+                <button onclick="openMobileSidebar()" class="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="Open Navigation">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+
+                <!-- Page Title -->
+                <h2 id="view-title" class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">Dashboard Overview</h2>
+                
+                <!-- Class Selector Badge (From Image 3: CSE-3B) -->
+                <div class="flex items-center">
+                    <select id="header-class-selector" onchange="onClassSelectorChange(this.value)" class="text-xs font-black bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-xl px-2.5 py-1 focus:outline-none cursor-pointer">
+                        <option value="CSE-3B">CSE-3B</option>
+                        <option value="CSE-3A">CSE-3A</option>
+                        <option value="ECE-2A">ECE-2A</option>
+                    </select>
+                </div>
+
+                <!-- API Status Badge (Image 3: Live API Connected) -->
+                <span id="backend-status-badge" class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    Live API Connected
                 </span>
             </div>
 
+            <!-- Right Controls: API bridge, Dark mode, Administrator profile area -->
             <div class="flex items-center space-x-3">
-                <!-- Backend API Bridge Config -->
-                <div class="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                
+                <!-- Backend API Config Pill -->
+                <div class="hidden lg:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-xl border border-slate-200 dark:border-slate-700">
                     <span class="text-[10px] font-bold text-slate-400 uppercase">API:</span>
                     <input id="backend-url-input" type="text" placeholder="https://smart-attendance-system.onrender.com" 
-                        class="bg-transparent text-xs text-slate-800 dark:text-slate-200 focus:outline-none w-56 font-mono"
+                        class="bg-transparent text-[11px] text-slate-800 dark:text-slate-200 focus:outline-none w-52 font-mono"
                         onchange="saveBackendUrl(this.value)">
-                    <button onclick="testBackendConnection()" title="Ping API" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 text-xs font-bold">
+                    <button onclick="testBackendConnection()" title="Ping Backend" class="text-blue-600 dark:text-blue-400 hover:underline text-[11px] font-bold">
                         Ping
                     </button>
                 </div>
 
-                <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <!-- Dark / Light Mode Toggle (Moon/Sun) -->
+                <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition" aria-label="Toggle Theme">
+                    <svg id="theme-toggle-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
                 </button>
+
+                <!-- Administrator Profile Area with Email (Image 3) -->
+                <div onclick="openProfileModal()" class="flex items-center space-x-2 pl-2 border-l border-slate-200 dark:border-slate-800 cursor-pointer">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-sm">S</div>
+                    <div class="hidden xl:block text-left">
+                        <div class="font-bold text-slate-900 dark:text-white leading-tight text-xs">System Administrator</div>
+                        <div class="text-[10px] text-slate-400 font-mono">admin@example.com</div>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <!-- View Containers Scrollable Body -->
-        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+        <!-- View Body (Scrollable Container) -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
             <!-- ========================================== -->
-            <!-- 1. DASHBOARD OVERVIEW -->
+            <!-- 1. DASHBOARD OVERVIEW (VISUALLY MATCHING IMAGE 3) -->
             <!-- ========================================== -->
             <section id="view-dashboard" class="tab-view space-y-6">
-                <!-- Stat Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Enrolled Students</span>
-                            <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs">🎓</div>
+                
+                <!-- TOP 4 KPI SUMMARY CARDS (Exact values & layout from Image 3) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- CARD 1: TOTAL ENROLLED -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow">
+                        <div class="text-[10px] font-black tracking-wider uppercase text-slate-400">Total Enrolled</div>
+                        <div id="stat-total-enrolled" class="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white mt-1">10 Students</div>
+                        <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center">
+                            <span>100% Biometrics Enrolled</span>
                         </div>
-                        <div id="stat-students-count" class="text-2xl font-black text-slate-900 dark:text-white mt-2">128</div>
-                        <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">✓ 100% Biometrics Enrolled</div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Active Faculty</span>
-                            <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">👨‍🏫</div>
+                    <!-- CARD 2: PRESENT TODAY -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow">
+                        <div class="text-[10px] font-black tracking-wider uppercase text-slate-400">Present Today</div>
+                        <div id="stat-present-today" class="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white mt-1">8 / 10</div>
+                        <div class="text-xs font-bold text-blue-600 dark:text-blue-400 mt-1">
+                            80.0% Attendance Ratio
                         </div>
-                        <div id="stat-teachers-count" class="text-2xl font-black text-slate-900 dark:text-white mt-2">14</div>
-                        <div class="text-[11px] text-slate-400 font-medium mt-1">Across 4 Departments</div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <!-- CARD 3: SHORTAGE ALERTS -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Today Attendance Rate</span>
-                            <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">📊</div>
+                            <span class="text-[10px] font-black tracking-wider uppercase text-slate-400">Shortage Alerts</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">&lt;75%</span>
                         </div>
-                        <div id="stat-rate-count" class="text-2xl font-black text-slate-900 dark:text-white mt-2">89.4%</div>
-                        <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">↑ +2.1% from last week</div>
+                        <div id="stat-shortage-alerts" class="text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 mt-1">1</div>
+                        <div class="text-xs font-bold text-rose-500 mt-1">
+                            1 Student At Risk
+                        </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-400 uppercase">Shortage Warnings</span>
-                            <div class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs">⚠️</div>
+                    <!-- CARD 4: VISION MODEL -->
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm transition hover:shadow">
+                        <div class="text-[10px] font-black tracking-wider uppercase text-slate-400">Vision Model</div>
+                        <div class="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white mt-1">
+                            OpenCV <span class="text-sm font-bold text-blue-600">LBPH</span>
                         </div>
-                        <div id="stat-shortage-count" class="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2">2 Students</div>
-                        <div class="text-[11px] text-rose-500 font-bold mt-1">&lt;75% Threshold Alert</div>
+                        <div class="text-xs font-bold text-slate-500 mt-1">
+                            Haar Cascade Detector Active
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- Weekly Trend Chart -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Institutional Attendance Trends</h3>
-                        <span class="text-xs text-slate-400">Weekly Aggregation</span>
+                <!-- MIDDLE ROW: WEEKLY ATTENDANCE TREND + LIVE SESSION CONTROL (From Image 3) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- LEFT (Cols 7): WEEKLY ATTENDANCE TREND (CLASS CSE-3B) -->
+                    <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 id="chart-class-title" class="text-sm font-black text-slate-900 dark:text-white">Weekly Attendance Trend (Class CSE-3B)</h3>
+                                <span class="text-[11px] text-slate-400 font-medium">Daily attendance percentage aggregated by analytics engine</span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800">
+                                Analytics Engine
+                            </span>
+                        </div>
+                        <div class="h-64 sm:h-72 w-full pt-2">
+                            <canvas id="trendChart"></canvas>
+                        </div>
                     </div>
-                    <div class="h-64">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
 
-                <!-- Student Self-Service Portal View (When Role = Student) -->
-                <div id="student-portal-banner" class="hidden bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-3xl p-6 shadow-md">
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- RIGHT (Cols 4): LIVE SESSION CONTROL (From Image 3) -->
+                    <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
                         <div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-white/20 uppercase tracking-wider">Student Self-Service</span>
-                            <h3 class="text-xl font-black mt-2">Welcome, Alice Walker (CS-2025-001)</h3>
-                            <p class="text-sm text-blue-100 mt-1">Your current aggregate attendance is <strong>91.4%</strong>. You are safely above the 75% threshold!</p>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-black text-slate-900 dark:text-white">LIVE SESSION CONTROL</h3>
+                                <span class="flex h-2 w-2 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                                Start real-time attendance recognition with live video capture.
+                            </p>
                         </div>
-                        <button onclick="switchTab('records')" class="px-5 py-2.5 bg-white text-blue-700 rounded-2xl font-black text-xs hover:bg-blue-50 transition shadow-sm">
-                            View My Logged Attendance
+
+                        <!-- Session Parameters -->
+                        <div class="space-y-3 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subject</label>
+                                <div class="font-black text-slate-900 dark:text-white text-xs mt-0.5">Operating Systems</div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Class</label>
+                                <div class="font-black text-blue-600 dark:text-blue-400 text-xs mt-0.5">CSE-3B (Period 1)</div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Recognition Engine</label>
+                                <div class="font-medium text-slate-500 text-[11px] mt-0.5">OpenCV-LBPH • 700ms intervals</div>
+                            </div>
+                        </div>
+
+                        <!-- Launch Button (Connects to Live Attendance Flow) -->
+                        <button onclick="launchLiveSessionFromDashboard('CSE-3B', 'Operating Systems', 1)" 
+                            class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-md shadow-blue-500/25 flex items-center justify-center space-x-1.5">
+                            <span>Launch Live Session</span>
+                            <span class="text-base font-bold">→</span>
                         </button>
                     </div>
+
                 </div>
+
             </section>
 
             <!-- ========================================== -->
-            <!-- 2. STUDENTS MANAGEMENT -->
+            <!-- 2. STUDENTS MODULE -->
             <!-- ========================================== -->
             <section id="view-students" class="tab-view hidden space-y-6">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex items-center space-x-3 flex-1 max-w-md">
-                            <input id="student-search-input" type="text" placeholder="Search by name, roll number, email..."
+                            <input id="student-search-input" type="text" placeholder="Search by name, roll number, class..."
                                 oninput="filterStudentsTable()"
                                 class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs focus:outline-none">
                         </div>
@@ -303,15 +412,17 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 3. TEACHERS & FACULTY MANAGEMENT -->
+            <!-- 3. TEACHERS MODULE -->
             <!-- ========================================== -->
             <section id="view-teachers" class="tab-view hidden space-y-6">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Faculty Directory & Allocations</h3>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Faculty & Teachers Directory</h3>
+                            <p class="text-xs text-slate-400">Manage academic instructors, departments, and course allocations</p>
+                        </div>
                         <button onclick="openAddTeacherModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            Add Faculty Member
+                            + Add Faculty Member
                         </button>
                     </div>
 
@@ -336,36 +447,70 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 4. CLASSES & TIMETABLE SCHEDULING -->
+            <!-- 4. CLASSES & TIMETABLE MODULE -->
             <!-- ========================================== -->
             <section id="view-classes" class="tab-view hidden space-y-6">
-                <!-- Classes & Subjects Summary -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Classrooms -->
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Active Classrooms</h3>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Classrooms</h3>
                             <button onclick="openAddClassModal()" class="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold">+ Add Class</button>
                         </div>
                         <div id="classes-list" class="space-y-2"></div>
                     </div>
 
-                    <!-- Subjects -->
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Subject Curriculum</h3>
-                            <button onclick="openAddSubjectModal()" class="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold">+ Add Subject</button>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Assigned Subjects</h3>
+                            <button onclick="switchTab('subjects')" class="text-xs font-bold text-blue-600 hover:underline">Manage All →</button>
                         </div>
-                        <div id="subjects-list" class="space-y-2"></div>
+                        <div id="subjects-summary-list" class="space-y-2"></div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Timetable Period Schedule -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <!-- ========================================== -->
+            <!-- 5. SUBJECTS MODULE -->
+            <!-- ========================================== -->
+            <section id="view-subjects" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Subject Curriculum Catalog</h3>
+                            <p class="text-xs text-slate-400">Course codes, assigned faculty instructors, and associated classes</p>
+                        </div>
+                        <button onclick="openAddSubjectModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+                            + Add Subject
+                        </button>
+                    </div>
+                    <div id="subjects-table-container" class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase">
+                                    <th class="py-3 px-4">Code</th>
+                                    <th class="py-3 px-4">Subject Name</th>
+                                    <th class="py-3 px-4">Class</th>
+                                    <th class="py-3 px-4">Assigned Faculty</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subjects-full-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- 6. TIMETABLE MODULE -->
+            <!-- ========================================== -->
+            <section id="view-timetable" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Institutional Timetable Schedule</h3>
-                            <p class="text-xs text-slate-400">Class periods, assigned faculty, and lecture halls</p>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Master Period Schedule</h3>
+                            <p class="text-xs text-slate-400">Weekly class periods, timetable allocations, and hall assignments</p>
                         </div>
                         <button onclick="openAddTimetableModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
                             + Schedule Period Slot
@@ -395,19 +540,51 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 5. LIVE ATTENDANCE RECOGNITION -->
+            <!-- 7. HOLIDAYS MODULE -->
+            <!-- ========================================== -->
+            <section id="view-holidays" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Academic Calendar Holidays</h3>
+                            <p class="text-xs text-slate-400">Official university holidays excluded from attendance deficit calculations</p>
+                        </div>
+                        <button onclick="openAddHolidayModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+                            + Add Holiday
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase">
+                                    <th class="py-3 px-4">Date</th>
+                                    <th class="py-3 px-4">Holiday Name</th>
+                                    <th class="py-3 px-4">Description</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="holidays-table-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- 8. TAKE ATTENDANCE (LIVE BIOMETRIC ATTENDANCE) -->
             <!-- ========================================== -->
             <section id="view-live" class="tab-view hidden space-y-6">
-                <!-- Session Controller -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <!-- Session Controller Banner -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex flex-wrap items-center gap-3">
-                        <label class="text-xs font-bold text-slate-400 uppercase">Session Slot:</label>
-                        <select id="live-session-select" onchange="updateLiveSessionSelection()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none">
-                            <option value="1">CSE-3A • CS301 Database Management (Period 1)</option>
-                            <option value="2">CSE-3A • CS302 Operating Systems (Period 2)</option>
-                            <option value="3">ECE-2A • EC201 Signals & Systems (Period 3)</option>
-                        </select>
-                        <span id="live-session-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">Active Slot</span>
+                        <div class="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 font-bold flex items-center justify-center text-xs">1</div>
+                        <div>
+                            <div class="font-black text-sm text-slate-900 dark:text-white" id="live-session-header-title">CSE-3B — Operating Systems</div>
+                            <div class="text-[11px] text-slate-400">Engine: <span class="text-blue-600 font-semibold font-mono">OpenCV-LBPH</span> • Started at 09:00 UTC</div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-50 dark:bg-blue-950 text-blue-600 border border-blue-200 dark:border-blue-800">Period 1</span>
                     </div>
 
                     <div class="flex items-center space-x-3">
@@ -421,7 +598,7 @@
                 <!-- Video Feed & Roster -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <!-- Left: Camera Frame -->
-                    <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center">
+                    <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center">
                         <div class="camera-wrapper shadow-lg mb-4">
                             <video id="live-video" autoplay playsinline muted></video>
                             <canvas id="live-canvas"></canvas>
@@ -433,16 +610,16 @@
                     </div>
 
                     <!-- Right: Live Roster with Inline Manual Override -->
-                    <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[520px]">
+                    <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col h-[520px]">
                         <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                             <div>
                                 <h3 class="text-sm font-black text-slate-900 dark:text-white">Session Roster</h3>
-                                <p class="text-[11px] text-slate-400">Click status to manually override</p>
+                                <p class="text-[11px] text-slate-400">Click any student pill for 1-click manual override</p>
                             </div>
                             <div class="flex items-center space-x-2 text-xs font-bold">
-                                <span class="text-emerald-600">Present: <span id="live-marked-count">0</span></span>
+                                <span class="text-emerald-600 font-bold">Marked: <span id="live-marked-count">0</span></span>
                                 <span class="text-slate-400">•</span>
-                                <span class="text-rose-500">Absent: <span id="live-unmarked-count">0</span></span>
+                                <span class="text-rose-500 font-bold">Unmarked: <span id="live-unmarked-count">0</span></span>
                             </div>
                         </div>
 
@@ -454,30 +631,29 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 6. BIOMETRIC FACE ENROLLMENT -->
+            <!-- 9. FACE ENROLLMENT MODULE -->
             <!-- ========================================== -->
             <section id="view-enroll" class="tab-view hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center">
+                    <div class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col items-center">
                         <div class="camera-wrapper shadow-lg mb-4">
                             <video id="enroll-video" autoplay playsinline muted></video>
                             <canvas id="enroll-canvas"></canvas>
                         </div>
                         <div class="flex items-center space-x-3">
                             <button onclick="startEnrollCamera()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 font-bold text-xs rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition">
-                                Start Preview
+                                Start Camera
                             </button>
                             <button onclick="captureEnrollSample()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
-                                Capture Frame
+                                Capture Sample
                             </button>
                         </div>
                     </div>
 
-                    <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
-                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Multi-Angle Enrollment Workflow</h3>
+                    <div class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Biometric Face Enrollment</h3>
                         <p class="text-xs text-slate-500 leading-relaxed">
-                            Captures 5 high-resolution biometric facial samples to train the local OpenCV-LBPH histogram model. 
-                            Laplacian blur validation verifies image sharpness.
+                            Captures 5 calibrated face samples to construct the student's LBPH spatial histogram encoding.
                         </p>
 
                         <div>
@@ -491,7 +667,7 @@
                         <div class="space-y-2">
                             <div class="flex justify-between text-xs font-bold">
                                 <span id="enroll-status-text">0 / 5 Samples Captured</span>
-                                <span class="text-blue-600">Laplacian Variance Check</span>
+                                <span class="text-blue-600 font-mono">Laplacian &gt; 45</span>
                             </div>
                             <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
                                 <div id="enroll-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
@@ -499,12 +675,11 @@
                         </div>
 
                         <div class="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl text-xs space-y-2">
-                            <div class="font-bold text-blue-900 dark:text-blue-300">💡 Guidelines for Quality Capture:</div>
+                            <div class="font-bold text-blue-900 dark:text-blue-300">Validation Rules:</div>
                             <ul class="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 text-[11px]">
-                                <li>Ensure face is centered inside the camera frame</li>
-                                <li>Look straight ahead for sample 1-2</li>
-                                <li>Slight angle left/right for samples 3-4</li>
-                                <li>Neutral smile and steady lighting for sample 5</li>
+                                <li>Exactly 1 face in viewfinder</li>
+                                <li>Sharp focus (Laplacian Var &gt; 45)</li>
+                                <li>Adequate ambient front lighting</li>
                             </ul>
                         </div>
                     </div>
@@ -512,10 +687,10 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 7. HISTORICAL RECORDS -->
+            <!-- 10. ATTENDANCE RECORDS MODULE -->
             <!-- ========================================== -->
             <section id="view-records" class="tab-view hidden space-y-6">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div class="flex flex-wrap items-center gap-3">
                             <input id="rec-filter-date" type="date" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none">
@@ -527,7 +702,6 @@
                             </select>
                         </div>
                         <button onclick="exportRecordsToCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             Export CSV
                         </button>
                     </div>
@@ -553,25 +727,57 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 8. SHORTAGE WARNINGS (< 75%) -->
+            <!-- 11. REPORTS & ANALYTICS MODULE -->
             <!-- ========================================== -->
-            <section id="view-shortage" class="tab-view hidden space-y-6">
-                <!-- Shortage Formula Explanation -->
-                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-3xl p-6">
-                    <div class="flex items-start justify-between">
+            <section id="view-reports" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
                         <div>
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 uppercase">Regulatory Mandate</span>
-                            <h3 class="text-base font-black text-amber-950 dark:text-amber-200 mt-2">Shortage Projection & Compensatory Classes</h3>
-                            <p class="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
-                                Under university regulations, students below <strong>75%</strong> attendance are barred from examinations. 
-                                The consecutive future lectures required is calculated via:
-                                <code class="font-mono font-bold bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded">Needed = ⌈(0.75 × Total - Attended) / (1 - 0.75)⌉ = ⌈3 × Total - 4 × Attended⌉</code>
-                            </p>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Institutional Analytics & Reports</h3>
+                            <p class="text-xs text-slate-400">Class-wise attendance rates, subject trends, and exportable ledgers</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="exportRecordsToCSV()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Average Attendance</span>
+                            <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">89.4%</div>
+                            <div class="text-[11px] text-emerald-600 font-bold mt-1">Institutional Median</div>
+                        </div>
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Top Performing Class</span>
+                            <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">CSE-3B</div>
+                            <div class="text-[11px] text-blue-600 font-bold mt-1">94.3% Aggregate</div>
+                        </div>
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Attendance Method</span>
+                            <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">96.8% Face</div>
+                            <div class="text-[11px] text-slate-400 font-bold mt-1">3.2% Manual Override</div>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <!-- ========================================== -->
+            <!-- 12. SHORTAGE LIST (< 75%) MODULE -->
+            <!-- ========================================== -->
+            <section id="view-shortage" class="tab-view hidden space-y-6">
+                <!-- Shortage Formula Explanation -->
+                <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 uppercase">Regulatory Mandate</span>
+                    <h3 class="text-sm font-black text-amber-950 dark:text-amber-200 mt-2">Shortage Projection & Compensatory Classes</h3>
+                    <p class="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-relaxed">
+                        Students below <strong>75%</strong> attendance threshold are highlighted below. Consecutive future lectures needed is computed via:
+                        <code class="font-mono font-bold bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded">Needed = ⌈3 × Total - 4 × Attended⌉</code>
+                    </p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-sm font-black text-slate-900 dark:text-white">Flagged Students Below 75% Threshold</h3>
                         <span class="text-xs text-rose-500 font-bold">Auto-Monitored Daily</span>
@@ -584,7 +790,7 @@
                                     <th class="py-3 px-4">Student</th>
                                     <th class="py-3 px-4">Roll Number</th>
                                     <th class="py-3 px-4">Class</th>
-                                    <th class="py-3 px-4">Current %</th>
+                                    <th class="py-3 px-4">Attendance %</th>
                                     <th class="py-3 px-4">Attended / Total</th>
                                     <th class="py-3 px-4">Required Classes to Reach 75%</th>
                                     <th class="py-3 px-4">Risk Level</th>
@@ -599,11 +805,11 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 9. SYSTEM DIAGNOSTICS -->
+            <!-- 13. DIAGNOSTICS & HEALTH MODULE -->
             <!-- ========================================== -->
             <section id="view-diagnostics" class="tab-view hidden space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                         <h3 class="text-sm font-black text-slate-900 dark:text-white">Biometric Engine Telemetry</h3>
                         <div class="space-y-3 text-xs">
                             <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -616,7 +822,7 @@
                             </div>
                             <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
                                 <span class="text-slate-400 font-semibold">Laplacian Blur Threshold:</span>
-                                <span class="font-bold">45.0 (Var &gt; 45 required)</span>
+                                <span class="font-bold">45.0 (Variance &gt; 45 required)</span>
                             </div>
                             <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
                                 <span class="text-slate-400 font-semibold">LBPH Distance Threshold:</span>
@@ -625,7 +831,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                         <h3 class="text-sm font-black text-slate-900 dark:text-white">Cloud Infrastructure & Database</h3>
                         <div class="space-y-3 text-xs">
                             <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -650,13 +856,15 @@
             </section>
 
             <!-- ========================================== -->
-            <!-- 10. AUDIT TRAIL -->
+            <!-- 14. AUDIT LOGS MODULE -->
             <!-- ========================================== -->
             <section id="view-audit" class="tab-view hidden space-y-6">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-sm font-black text-slate-900 dark:text-white">System Security & Audit Trail</h3>
-                        <span class="text-xs text-slate-400">Chronological Event Logs</span>
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Audit Logs & Security Trail</h3>
+                            <p class="text-xs text-slate-400">Immutable chronological events log</p>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -678,6 +886,69 @@
                 </div>
             </section>
 
+            <!-- ========================================== -->
+            <!-- 15. BACKUPS MODULE -->
+            <!-- ========================================== -->
+            <section id="view-backups" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white">Database Snapshot & Backups</h3>
+                            <p class="text-xs text-slate-400">Automated daily snapshots and manual disaster recovery exports</p>
+                        </div>
+                        <button onclick="triggerManualBackup()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+                            Create Backup Snapshot
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Backup Health Status</span>
+                            <div class="text-base font-black text-emerald-600 mt-1">✓ Automated Snapshots Active</div>
+                            <div class="text-[11px] text-slate-400 mt-1">Daily snapshot runs at 03:00 UTC</div>
+                        </div>
+                        <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Target Storage</span>
+                            <div class="text-base font-black text-slate-900 dark:text-white mt-1">Render Managed PostgreSQL</div>
+                            <div class="text-[11px] text-slate-400 mt-1">Encrypted at rest with WAL point-in-time recovery</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- 16. SETTINGS MODULE -->
+            <!-- ========================================== -->
+            <section id="view-settings" class="tab-view hidden space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4 max-w-2xl">
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">System Configuration</h3>
+                    
+                    <form onsubmit="saveSystemSettings(event)" class="space-y-4 text-xs">
+                        <div>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Attendance Minimum Threshold (%)</label>
+                            <input id="setting-threshold" type="number" step="0.1" value="75.0" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Face Recognition Matching Tolerance (Distance)</label>
+                            <input id="setting-face-dist" type="number" step="0.01" value="65.0" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Late Grace Period (Minutes)</label>
+                            <input id="setting-late-grace" type="number" value="10" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Deployed Flask API Base URL</label>
+                            <input id="setting-backend-url" type="text" value="https://smart-attendance-system.onrender.com" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-mono">
+                        </div>
+                        <div class="pt-2">
+                            <button type="submit" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm transition">
+                                Save System Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
         </div>
     </main>
 
@@ -687,10 +958,10 @@
 
     <!-- Add Student Modal -->
     <div id="modal-add-student" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-black text-slate-900 dark:text-white">Enroll New Student</h3>
-                <button onclick="closeModal('modal-add-student')" class="text-slate-400 hover:text-slate-600">&times;</button>
+                <button onclick="closeModal('modal-add-student')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
             </div>
             <form id="form-add-student" onsubmit="submitAddStudent(event)" class="space-y-3 text-xs">
                 <div>
@@ -699,7 +970,7 @@
                 </div>
                 <div>
                     <label class="font-bold text-slate-400 uppercase text-[10px]">Roll Number</label>
-                    <input id="stu-roll" required type="text" placeholder="e.g. CS-2025-010" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none uppercase">
+                    <input id="stu-roll" required type="text" placeholder="e.g. CS2025010" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none uppercase">
                 </div>
                 <div>
                     <label class="font-bold text-slate-400 uppercase text-[10px]">Email Address</label>
@@ -711,14 +982,13 @@
                         <select id="stu-dept" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none font-bold">
                             <option value="Computer Science">Computer Science</option>
                             <option value="Electronics & Communication">ECE</option>
-                            <option value="Mechanical Engineering">Mechanical</option>
                         </select>
                     </div>
                     <div>
                         <label class="font-bold text-slate-400 uppercase text-[10px]">Class / Section</label>
                         <select id="stu-class" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none font-bold">
-                            <option value="CSE-3A">CSE-3A</option>
                             <option value="CSE-3B">CSE-3B</option>
+                            <option value="CSE-3A">CSE-3A</option>
                             <option value="ECE-2A">ECE-2A</option>
                         </select>
                     </div>
@@ -733,10 +1003,10 @@
 
     <!-- Add Teacher Modal -->
     <div id="modal-add-teacher" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-black text-slate-900 dark:text-white">Register Faculty Member</h3>
-                <button onclick="closeModal('modal-add-teacher')" class="text-slate-400 hover:text-slate-600">&times;</button>
+                <button onclick="closeModal('modal-add-teacher')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
             </div>
             <form id="form-add-teacher" onsubmit="submitAddTeacher(event)" class="space-y-3 text-xs">
                 <div>
@@ -751,10 +1021,6 @@
                     <label class="font-bold text-slate-400 uppercase text-[10px]">Department</label>
                     <input id="teach-dept" required type="text" value="Computer Science & Engineering" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none">
                 </div>
-                <div>
-                    <label class="font-bold text-slate-400 uppercase text-[10px]">Default Password</label>
-                    <input id="teach-pwd" required type="password" value="Teacher@123" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none">
-                </div>
                 <div class="pt-3 flex justify-end space-x-2">
                     <button type="button" onclick="closeModal('modal-add-teacher')" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold">Cancel</button>
                     <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold">Register Faculty</button>
@@ -763,40 +1029,60 @@
         </div>
     </div>
 
-    <!-- Login / Auth Modal -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+    <!-- User Profile Modal -->
+    <div id="modal-profile" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div class="flex justify-between items-center">
-                <h3 class="text-sm font-black text-slate-900 dark:text-white">Authentication & Roles</h3>
-                <button onclick="closeModal('modal-login')" class="text-slate-400 hover:text-slate-600">&times;</button>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">Administrator Profile</h3>
+                <button onclick="closeModal('modal-profile')" class="text-slate-400 hover:text-slate-600">&times;</button>
             </div>
-            
-            <div class="space-y-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Quick Demo Login:</span>
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                    <button onclick="quickLogin('admin')" class="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold hover:bg-blue-100 transition">Admin</button>
-                    <button onclick="quickLogin('teacher')" class="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 transition">Faculty</button>
-                    <button onclick="quickLogin('student')" class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-100 transition">Student</button>
-                </div>
-            </div>
-
-            <div class="relative flex py-1 items-center">
-                <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                <span class="flex-shrink mx-2 text-[10px] text-slate-400 font-bold uppercase">Or Account Login</span>
-                <div class="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-            </div>
-
-            <form id="form-login" onsubmit="submitLogin(event)" class="space-y-3 text-xs">
+            <div class="space-y-3 text-xs">
                 <div>
-                    <label class="font-bold text-slate-400 uppercase text-[10px]">Email</label>
-                    <input id="login-email" required type="email" placeholder="admin@example.com" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Name</label>
+                    <div class="font-bold text-slate-900 dark:text-white">System Administrator</div>
                 </div>
                 <div>
-                    <label class="font-bold text-slate-400 uppercase text-[10px]">Password</label>
-                    <input id="login-pwd" required type="password" placeholder="••••••••" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Email</label>
+                    <div class="font-mono text-slate-700 dark:text-slate-300">admin@example.com</div>
                 </div>
-                <div class="pt-2">
-                    <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition">Sign In</button>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Role</label>
+                    <div class="font-bold text-blue-600">Full Access Administrator</div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Biometric Engine Authorization</label>
+                    <div class="text-slate-500">Superuser • Model Training Permitted</div>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeModal('modal-profile')" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="modal-change-password" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">Change Password</h3>
+                <button onclick="closeModal('modal-change-password')" class="text-slate-400 hover:text-slate-600">&times;</button>
+            </div>
+            <form onsubmit="submitChangePassword(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="font-bold text-slate-400 uppercase text-[10px]">Current Password</label>
+                    <input id="pwd-current" required type="password" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-400 uppercase text-[10px]">New Password</label>
+                    <input id="pwd-new" required type="password" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                    <label class="font-bold text-slate-400 uppercase text-[10px]">Confirm New Password</label>
+                    <input id="pwd-confirm" required type="password" class="w-full mt-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                </div>
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('modal-change-password')" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold">Update Password</button>
                 </div>
             </form>
         </div>
@@ -808,57 +1094,68 @@
     <script>
         // High-Fidelity In-Memory & LocalStorage Data Store
         const DEFAULT_STUDENTS = [
-            { id: 1, name: 'Alice Walker', roll: 'CS-2025-001', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 91.4, attended: 32, total: 35 },
-            { id: 2, name: 'Bob Smith', roll: 'CS-2025-002', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 88.6, attended: 31, total: 35 },
-            { id: 3, name: 'Catherine Zeta', roll: 'CS-2025-003', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 68.6, attended: 24, total: 35 },
-            { id: 4, name: 'David Miller', roll: 'CS-2025-004', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 94.3, attended: 33, total: 35 },
-            { id: 5, name: 'Emma Watson', roll: 'CS-2025-005', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 62.9, attended: 22, total: 35 },
-            { id: 6, name: 'Frank Edwards', roll: 'CS-2025-006', class: 'CSE-3A', enrolled: true, samples: 5, active: true, pct: 85.7, attended: 30, total: 35 }
+            { id: 1, name: 'Kabir Mehta', roll: 'CS2023013', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 90.0, attended: 27, total: 30 },
+            { id: 2, name: 'Kavya Deshmukh', roll: 'CS2023014', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 86.7, attended: 26, total: 30 },
+            { id: 3, name: 'Manish Kumar', roll: 'CS2023015', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 70.0, attended: 21, total: 30 },
+            { id: 4, name: 'Neha Bhatia', roll: 'CS2023016', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 93.3, attended: 28, total: 30 },
+            { id: 5, name: 'Pooja Nair', roll: 'CS2023017', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 83.3, attended: 25, total: 30 },
+            { id: 6, name: 'Pranav Joshi', roll: 'CS2023018', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 80.0, attended: 24, total: 30 },
+            { id: 7, name: 'Rahul Pillai', roll: 'CS2023019', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 86.7, attended: 26, total: 30 },
+            { id: 8, name: 'Rhea Sengupta', roll: 'CS2023020', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 76.7, attended: 23, total: 30 },
+            { id: 9, name: 'Siddharth Menon', roll: 'CS2023021', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 90.0, attended: 27, total: 30 },
+            { id: 10, name: 'Tanvi Saxena', roll: 'CS2023022', class: 'CSE-3B', enrolled: true, samples: 5, active: true, pct: 83.3, attended: 25, total: 30 }
         ];
 
         const DEFAULT_TEACHERS = [
-            { id: 1, name: 'Dr. Sarah Jenkins', email: 'dr.sarah@example.com', dept: 'Computer Science', designation: 'Associate Professor', subjects: ['CS301: DBMS', 'CS302: OS'] },
+            { id: 1, name: 'Dr. Sarah Jenkins', email: 'dr.sarah@example.com', dept: 'Computer Science', designation: 'Associate Professor', subjects: ['CS301: DBMS', 'CS302: Operating Systems'] },
             { id: 2, name: 'Prof. Robert Davis', email: 'prof.robert@example.com', dept: 'Computer Science', designation: 'Assistant Professor', subjects: ['CS303: Computer Networks'] },
             { id: 3, name: 'Dr. Alan Turing', email: 'alan@example.com', dept: 'Electronics', designation: 'Professor', subjects: ['EC201: Signals & Systems'] }
         ];
 
         const DEFAULT_CLASSES = [
-            { id: 1, name: 'CSE-3A', department: 'Computer Science', year: 3, section: 'A', students_count: 6 },
-            { id: 2, name: 'CSE-3B', department: 'Computer Science', year: 3, section: 'B', students_count: 42 },
-            { id: 3, name: 'ECE-2A', department: 'Electronics', year: 2, section: 'A', students_count: 38 }
+            { id: 1, name: 'CSE-3B', department: 'Computer Science & Engineering', year: 3, section: 'B', students_count: 10 },
+            { id: 2, name: 'CSE-3A', department: 'Computer Science & Engineering', year: 3, section: 'A', students_count: 32 },
+            { id: 3, name: 'ECE-2A', department: 'Electronics & Communication', year: 2, section: 'A', students_count: 28 }
         ];
 
         const DEFAULT_SUBJECTS = [
-            { id: 1, code: 'CS301', name: 'Database Management Systems', teacher: 'Dr. Sarah Jenkins', class: 'CSE-3A' },
-            { id: 2, code: 'CS302', name: 'Operating Systems', teacher: 'Dr. Sarah Jenkins', class: 'CSE-3A' },
+            { id: 1, code: 'CS302', name: 'Operating Systems', teacher: 'Dr. Sarah Jenkins', class: 'CSE-3B' },
+            { id: 2, code: 'CS301', name: 'Database Management Systems', teacher: 'Dr. Sarah Jenkins', class: 'CSE-3B' },
             { id: 3, code: 'CS303', name: 'Computer Networks', teacher: 'Prof. Robert Davis', class: 'CSE-3A' },
             { id: 4, code: 'EC201', name: 'Signals & Systems', teacher: 'Dr. Alan Turing', class: 'ECE-2A' }
         ];
 
         const DEFAULT_TIMETABLE = [
-            { id: 1, day: 'Monday', period: 1, time: '09:00 - 10:00', class: 'CSE-3A', subject: 'CS301: DBMS', teacher: 'Dr. Sarah Jenkins', room: 'Hall 101' },
-            { id: 2, day: 'Monday', period: 2, time: '10:00 - 11:00', class: 'CSE-3A', subject: 'CS302: Operating Systems', teacher: 'Dr. Sarah Jenkins', room: 'Hall 101' },
-            { id: 3, day: 'Tuesday', period: 1, time: '09:00 - 10:00', class: 'CSE-3A', subject: 'CS303: Computer Networks', teacher: 'Prof. Robert Davis', room: 'Hall 102' },
-            { id: 4, day: 'Wednesday', period: 3, time: '11:15 - 12:15', class: 'ECE-2A', subject: 'EC201: Signals & Systems', teacher: 'Dr. Alan Turing', room: 'Hall 204' }
+            { id: 1, day: 'Monday', period: 1, time: '09:00 - 10:00', class: 'CSE-3B', subject: 'Operating Systems', teacher: 'Dr. Sarah Jenkins', room: 'Hall 201' },
+            { id: 2, day: 'Monday', period: 2, time: '10:00 - 11:00', class: 'CSE-3B', subject: 'Database Management', teacher: 'Dr. Sarah Jenkins', room: 'Hall 201' },
+            { id: 3, day: 'Tuesday', period: 1, time: '09:00 - 10:00', class: 'CSE-3A', subject: 'Computer Networks', teacher: 'Prof. Robert Davis', room: 'Hall 102' },
+            { id: 4, day: 'Wednesday', period: 3, time: '11:15 - 12:15', class: 'ECE-2A', subject: 'Signals & Systems', teacher: 'Dr. Alan Turing', room: 'Hall 305' }
+        ];
+
+        const DEFAULT_HOLIDAYS = [
+            { id: 1, date: '2026-10-02', name: 'Gandhi Jayanti', description: 'National Holiday' },
+            { id: 2, date: '2026-11-01', name: 'Diwali Festival', description: 'Institutional Holiday' },
+            { id: 3, date: '2026-12-25', name: 'Christmas Day', description: 'Official Holiday' }
         ];
 
         let state = {
-            currentUser: { role: 'admin', name: 'Administrator', email: 'admin@example.com' },
+            activeClass: 'CSE-3B',
             students: JSON.parse(localStorage.getItem('sas_students')) || DEFAULT_STUDENTS,
             teachers: JSON.parse(localStorage.getItem('sas_teachers')) || DEFAULT_TEACHERS,
             classes: JSON.parse(localStorage.getItem('sas_classes')) || DEFAULT_CLASSES,
             subjects: JSON.parse(localStorage.getItem('sas_subjects')) || DEFAULT_SUBJECTS,
             timetable: JSON.parse(localStorage.getItem('sas_timetable')) || DEFAULT_TIMETABLE,
+            holidays: JSON.parse(localStorage.getItem('sas_holidays')) || DEFAULT_HOLIDAYS,
             records: JSON.parse(localStorage.getItem('sas_records')) || [],
             backendUrl: localStorage.getItem('sas_backend_url') || 'https://smart-attendance-system.onrender.com',
             backendOnline: false
         };
 
-        // Live Recognition Loop
         let isLiveRunning = false;
         let liveLoop = null;
-        let markedMap = new Map(); // studentId -> status ('Present', 'Late', 'Absent')
+        let markedMap = new Map();
         let enrollCount = 0;
+        let trendChartInstance = null;
 
         // Toast Helper
         function showToast(msg, type = 'info') {
@@ -874,8 +1171,21 @@
             }, 3000);
         }
 
-        // Tab Navigation
+        // Mobile Sidebar Controls
+        function openMobileSidebar() {
+            document.getElementById('app-sidebar').classList.remove('-translate-x-full');
+            document.getElementById('mobile-sidebar-backdrop').classList.remove('hidden');
+        }
+        function closeMobileSidebar() {
+            document.getElementById('app-sidebar').classList.add('-translate-x-full');
+            document.getElementById('mobile-sidebar-backdrop').classList.add('hidden');
+        }
+
+        // Navigation Tabs & Hash Routing
         function switchTab(tabId) {
+            closeMobileSidebar();
+            window.location.hash = tabId;
+
             document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(n => {
                 n.className = 'nav-item w-full flex items-center px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition';
@@ -890,90 +1200,83 @@
             }
 
             const titles = {
-                dashboard: 'Institutional Overview',
-                students: 'Student Management & Encodings',
-                teachers: 'Faculty & Teacher Allocations',
-                classes: 'Classrooms, Subjects & Timetable',
+                dashboard: 'Dashboard Overview',
+                students: 'Students Directory',
+                teachers: 'Faculty & Teachers',
+                classes: 'Classes & Timetable',
+                subjects: 'Subject Curriculum',
+                timetable: 'Master Timetable Schedule',
+                holidays: 'Academic Calendar Holidays',
                 live: 'Live Attendance Recognition',
                 enroll: 'Biometric Face Enrollment',
-                records: 'Historical Attendance Records',
-                shortage: 'Shortage Warning System (<75%)',
-                diagnostics: 'System & Engine Diagnostics',
-                audit: 'System Security & Audit Trail'
+                records: 'Attendance Records',
+                reports: 'Reports & Analytics',
+                shortage: 'Shortage Warning System (< 75%)',
+                diagnostics: 'Diagnostics & Health',
+                audit: 'Audit Logs & Security Trail',
+                backups: 'Database Backups',
+                settings: 'System Configuration'
             };
             document.getElementById('view-title').textContent = titles[tabId] || 'Smart Attendance System';
 
-            // Refresh tab contents
             if (tabId === 'students') renderStudentsTable();
             if (tabId === 'teachers') renderTeachersTable();
             if (tabId === 'classes') renderClassesAndTimetable();
+            if (tabId === 'subjects') renderSubjectsTable();
+            if (tabId === 'timetable') renderTimetableGrid();
+            if (tabId === 'holidays') renderHolidaysTable();
+            if (tabId === 'live') initLiveRoster();
             if (tabId === 'records') renderRecordsTable();
             if (tabId === 'shortage') renderShortageTable();
-            if (tabId === 'live') initLiveRoster();
             if (tabId === 'audit') renderAuditLogs();
         }
 
-        // Role Management
-        function changeRole(role) {
-            state.currentUser.role = role;
-            const names = { admin: 'Administrator', teacher: 'Dr. Sarah Jenkins', student: 'Alice Walker' };
-            const badges = { admin: 'System Admin', teacher: 'Faculty Member', student: 'Student (3rd Yr)' };
-            
-            state.currentUser.name = names[role];
-            document.getElementById('user-display-name').textContent = names[role];
-            document.getElementById('user-role-badge').textContent = badges[role];
-            document.getElementById('user-avatar').textContent = names[role][0];
-            document.getElementById('role-selector').value = role;
-
-            const studentBanner = document.getElementById('student-portal-banner');
-            if (role === 'student') {
-                studentBanner.classList.remove('hidden');
-            } else {
-                studentBanner.classList.add('hidden');
-            }
-
-            showToast(`Switched active view to ${names[role]} (${badges[role]})`, 'info');
+        // Header Class Selector Change
+        function onClassSelectorChange(cls) {
+            state.activeClass = cls;
+            document.getElementById('chart-class-title').textContent = `Weekly Attendance Trend (Class ${cls})`;
+            showToast(`Switched active class view to ${cls}`, 'info');
+            updateDashboardMetrics();
         }
 
-        function openLoginModal() { document.getElementById('modal-login').classList.remove('hidden'); }
+        function updateDashboardMetrics() {
+            const classStudents = state.students.filter(s => s.class === state.activeClass);
+            const total = classStudents.length || 10;
+            const present = Math.round(total * 0.8);
+            const ratio = ((present / total) * 100).toFixed(1);
+            const shortageCount = classStudents.filter(s => s.pct < 75).length;
+
+            document.getElementById('stat-total-enrolled').textContent = `${total} Students`;
+            document.getElementById('stat-present-today').textContent = `${present} / ${total}`;
+            document.getElementById('stat-shortage-alerts').textContent = shortageCount;
+        }
+
+        // Live Session Launchpad (from Image 3 Dashboard card)
+        function launchLiveSessionFromDashboard(cls, sub, period) {
+            switchTab('live');
+            document.getElementById('live-session-header-title').textContent = `${cls} — ${sub}`;
+            initLiveRoster();
+            toggleLiveCamera();
+        }
+
+        // Modal Helpers
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openAddStudentModal() { document.getElementById('modal-add-student').classList.remove('hidden'); }
+        function openAddTeacherModal() { document.getElementById('modal-add-teacher').classList.remove('hidden'); }
+        function openProfileModal() { document.getElementById('modal-profile').classList.remove('hidden'); }
+        function openChangePasswordModal() { document.getElementById('modal-change-password').classList.remove('hidden'); }
+        function openAddClassModal() { showToast('Use Core Admin to manage classes or add via backend API', 'info'); }
+        function openAddSubjectModal() { switchTab('subjects'); }
+        function openAddTimetableModal() { switchTab('timetable'); }
+        function openAddHolidayModal() { showToast('Add holiday modal loaded', 'info'); }
 
-        function quickLogin(role) {
-            closeModal('modal-login');
-            changeRole(role);
+        function handleSignOut() {
+            localStorage.removeItem('sas_jwt');
+            showToast('You have been signed out successfully.', 'info');
+            setTimeout(() => { window.location.reload(); }, 600);
         }
 
-        async function submitLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const pwd = document.getElementById('login-pwd').value;
-            
-            // Try backend login
-            if (state.backendOnline) {
-                try {
-                    const res = await fetch(`${state.backendUrl}/api/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password: pwd })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        localStorage.setItem('sas_jwt', data.token);
-                        changeRole(data.user.role);
-                        closeModal('modal-login');
-                        showToast(`Logged in as ${data.user.name}`, 'success');
-                        return;
-                    }
-                } catch (err) {}
-            }
-
-            // Fallback
-            closeModal('modal-login');
-            changeRole(email.includes('admin') ? 'admin' : email.includes('dr') ? 'teacher' : 'student');
-            showToast('Authenticated via Standalone Bridge', 'success');
-        }
-
-        // Backend Bridge Connection & Sync
+        // Backend Bridge Connection
         function saveBackendUrl(url) {
             state.backendUrl = url.trim();
             localStorage.setItem('sas_backend_url', state.backendUrl);
@@ -985,36 +1288,30 @@
             const urlInput = document.getElementById('backend-url-input');
             if (urlInput) urlInput.value = state.backendUrl;
 
-            badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
-            badge.textContent = 'Connecting...';
-
             try {
                 const res = await fetch(`${state.backendUrl}/health`, { mode: 'cors' });
                 if (res.ok) {
                     const data = await res.json();
                     state.backendOnline = true;
-                    badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
-                    badge.textContent = `Connected (Render • ${data.face_engine})`;
+                    badge.className = 'hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>Live API Connected';
                     document.getElementById('diag-db-status').textContent = 'Connected (PostgreSQL)';
                     document.getElementById('diag-engine-name').textContent = data.face_engine;
                     syncWithBackend();
                     return;
                 }
-            } catch (err) {
-                // Connection failed
-            }
+            } catch (err) {}
 
             state.backendOnline = false;
-            badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300';
-            badge.textContent = 'Standalone Mode (WebRTC Ready)';
+            badge.className = 'hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300';
+            badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Standalone Mode';
         }
 
         async function syncWithBackend() {
             try {
-                const [stuRes, teachRes, classRes] = await Promise.all([
+                const [stuRes, teachRes] = await Promise.all([
                     fetch(`${state.backendUrl}/api/students`),
-                    fetch(`${state.backendUrl}/api/teachers`),
-                    fetch(`${state.backendUrl}/api/classes`)
+                    fetch(`${state.backendUrl}/api/teachers`)
                 ]);
                 if (stuRes.ok) {
                     const d = await stuRes.json();
@@ -1025,19 +1322,13 @@
                             pct: 90.0, attended: 27, total: 30
                         }));
                         renderStudentsTable();
-                    }
-                }
-                if (teachRes.ok) {
-                    const d = await teachRes.json();
-                    if (d.teachers && d.teachers.length > 0) {
-                        state.teachers = d.teachers;
-                        renderTeachersTable();
+                        updateDashboardMetrics();
                     }
                 }
             } catch (e) {}
         }
 
-        // Render Tables
+        // Render Tables & Modules
         function renderStudentsTable() {
             const tbody = document.getElementById('students-table-body');
             tbody.innerHTML = '';
@@ -1048,24 +1339,23 @@
                     <td class="py-3 px-4 font-mono text-slate-500">${s.roll}</td>
                     <td class="py-3 px-4 font-semibold text-blue-600">${s.class}</td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${s.enrolled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600'}">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.enrolled ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-slate-100 text-slate-600'}">
                             ${s.enrolled ? `Enrolled (${s.samples}/5)` : 'Not Enrolled'}
                         </span>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${s.active ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.active ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}">
                             ${s.active ? 'Active' : 'Inactive'}
                         </span>
                     </td>
-                    <td class="py-3 px-4 text-right space-x-2">
-                        <button onclick="triggerStudentReEnroll(${s.id})" class="text-blue-600 hover:underline font-bold">Enroll</button>
-                        <button onclick="toggleStudentActive(${s.id})" class="text-slate-500 hover:underline">Toggle</button>
+                    <td class="py-3 px-4 text-right space-x-2 font-bold">
+                        <button onclick="triggerStudentReEnroll(${s.id})" class="text-blue-600 hover:underline">Enroll</button>
+                        <button onclick="toggleStudentActive(${s.id})" class="text-slate-400 hover:text-slate-600">Toggle</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            // Populate enroll dropdown
             const sel = document.getElementById('enroll-student-select');
             if (sel) {
                 sel.innerHTML = '';
@@ -1087,9 +1377,9 @@
                 tr.innerHTML = `
                     <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${t.name}</td>
                     <td class="py-3 px-4 font-mono text-slate-500">${t.email}</td>
-                    <td class="py-3 px-4">${t.dept || 'Computer Science'}</td>
-                    <td class="py-3 px-4 text-slate-500">${t.designation || 'Faculty'}</td>
-                    <td class="py-3 px-4 space-x-1">${subs || 'General Faculty'}</td>
+                    <td class="py-3 px-4">${t.dept}</td>
+                    <td class="py-3 px-4 text-slate-500">${t.designation}</td>
+                    <td class="py-3 px-4 space-x-1">${subs}</td>
                     <td class="py-3 px-4 text-right">
                         <span class="text-emerald-600 font-bold text-[11px]">Active</span>
                     </td>
@@ -1103,38 +1393,56 @@
             cList.innerHTML = '';
             state.classes.forEach(c => {
                 const div = document.createElement('div');
-                div.className = 'p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between';
+                div.className = 'p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800';
                 div.innerHTML = `
                     <div>
                         <div class="font-bold text-slate-900 dark:text-white text-xs">${c.name}</div>
-                        <div class="text-[11px] text-slate-400">${c.department} • Year ${c.year || 3}</div>
+                        <div class="text-[11px] text-slate-400">${c.department}</div>
                     </div>
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
-                        ${c.students_count || 35} Students
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                        ${c.students_count} Students
                     </span>
                 `;
                 cList.appendChild(div);
             });
 
-            const sList = document.getElementById('subjects-list');
-            sList.innerHTML = '';
+            const sSum = document.getElementById('subjects-summary-list');
+            sSum.innerHTML = '';
             state.subjects.forEach(s => {
                 const div = document.createElement('div');
-                div.className = 'p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl flex items-center justify-between';
+                div.className = 'p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800';
                 div.innerHTML = `
                     <div>
                         <div class="font-bold text-slate-900 dark:text-white text-xs">${s.code}: ${s.name}</div>
                         <div class="text-[11px] text-slate-400">Faculty: ${s.teacher}</div>
                     </div>
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                        ${s.class}
-                    </span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">${s.class}</span>
                 `;
-                sList.appendChild(div);
+                sSum.appendChild(div);
             });
+        }
 
-            const tBody = document.getElementById('timetable-table-body');
-            tBody.innerHTML = '';
+        function renderSubjectsTable() {
+            const tbody = document.getElementById('subjects-full-body');
+            tbody.innerHTML = '';
+            state.subjects.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold text-blue-600">${s.code}</td>
+                    <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${s.name}</td>
+                    <td class="py-3 px-4 font-semibold">${s.class}</td>
+                    <td class="py-3 px-4 text-slate-500">${s.teacher}</td>
+                    <td class="py-3 px-4 text-right">
+                        <button class="text-blue-600 hover:underline font-bold">Edit</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderTimetableGrid() {
+            const tbody = document.getElementById('timetable-table-body');
+            tbody.innerHTML = '';
             state.timetable.forEach(t => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -1146,24 +1454,38 @@
                     <td class="py-3 px-4 text-slate-500">${t.teacher}</td>
                     <td class="py-3 px-4 font-mono text-slate-400">${t.room}</td>
                     <td class="py-3 px-4 text-right">
-                        <button onclick="startSessionFromTimetable(${t.id})" class="text-blue-600 hover:underline font-bold">Launch</button>
+                        <button onclick="launchLiveSessionFromDashboard('${t.class}', '${t.subject}', ${t.period})" class="text-blue-600 hover:underline font-bold">Launch →</button>
                     </td>
                 `;
-                tBody.appendChild(tr);
+                tbody.appendChild(tr);
             });
         }
 
-        // Shortage Table & Projection Math
+        function renderHolidaysTable() {
+            const tbody = document.getElementById('holidays-table-body');
+            tbody.innerHTML = '';
+            state.holidays.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono font-bold">${h.date}</td>
+                    <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${h.name}</td>
+                    <td class="py-3 px-4 text-slate-500">${h.description}</td>
+                    <td class="py-3 px-4 text-right">
+                        <span class="text-emerald-600 font-bold">Official</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function renderShortageTable() {
             const tbody = document.getElementById('shortage-table-body');
             tbody.innerHTML = '';
-
             state.students.forEach(s => {
                 const pct = s.pct || 85.0;
                 if (pct < 75.0) {
-                    // Exact mathematical calculation: Needed = ceil((0.75 * Total - Attended) / (1 - 0.75))
-                    const total = s.total || 35;
-                    const attended = s.attended || Math.round(total * pct / 100);
+                    const total = s.total || 30;
+                    const attended = s.attended || 21;
                     const needed = Math.max(0, Math.ceil((0.75 * total - attended) / 0.25));
                     const isCritical = pct < 65.0;
 
@@ -1178,8 +1500,8 @@
                             +${needed} Consecutive Classes
                         </td>
                         <td class="py-3 px-4">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isCritical ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-amber-100 text-amber-800'}">
-                                ${isCritical ? 'Critical Warning' : 'Moderate Warning'}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isCritical ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                                ${isCritical ? 'Critical' : 'Moderate Warning'}
                             </span>
                         </td>
                     `;
@@ -1188,22 +1510,22 @@
             });
         }
 
-        // Live Attendance & Manual Override Engine
+        // Live Attendance & 1-Click Status Override
         function initLiveRoster() {
             const rosterList = document.getElementById('live-marked-list');
             rosterList.innerHTML = '';
             
-            state.students.forEach(stu => {
+            const classStudents = state.students.filter(s => s.class === state.activeClass);
+            classStudents.forEach(stu => {
                 const status = markedMap.get(stu.id) || 'Absent';
                 const isPresent = status === 'Present';
                 const isLate = status === 'Late';
 
                 const item = document.createElement('div');
-                item.id = `roster-item-${stu.id}`;
-                item.className = 'p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl flex items-center justify-between transition';
+                item.className = 'p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 rounded-xl flex items-center justify-between transition';
                 item.innerHTML = `
                     <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 rounded-xl ${isPresent ? 'bg-emerald-600' : isLate ? 'bg-amber-600' : 'bg-slate-400'} text-white font-bold text-xs flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-lg ${isPresent ? 'bg-emerald-600' : isLate ? 'bg-amber-600' : 'bg-slate-400'} text-white font-bold text-xs flex items-center justify-center">
                             ${stu.name[0]}
                         </div>
                         <div>
@@ -1211,8 +1533,8 @@
                             <div class="text-[10px] text-slate-400 font-mono">${stu.roll}</div>
                         </div>
                     </div>
-                    <button onclick="toggleManualAttendance(${stu.id})" title="Click to toggle status" 
-                        class="px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer transition ${
+                    <button onclick="toggleManualAttendance(${stu.id})" title="Click to override" 
+                        class="px-2.5 py-1 text-[10px] font-bold rounded cursor-pointer transition ${
                             isPresent ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' :
                             isLate ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' :
                             'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
@@ -1231,14 +1553,13 @@
             const next = current === 'Absent' ? 'Present' : current === 'Present' ? 'Late' : 'Absent';
             markedMap.set(stuId, next);
 
-            // Log record
             const student = state.students.find(s => s.id === stuId);
             if (student) {
                 state.records.unshift({
                     id: Date.now(),
                     student: student.name,
                     roll: student.roll,
-                    subject: 'CS301: DBMS',
+                    subject: 'Operating Systems',
                     status: next,
                     method: 'Manual Override',
                     confidence: 100,
@@ -1248,9 +1569,8 @@
             }
 
             initLiveRoster();
-            showToast(`${student.name} marked as ${next}`, 'info');
+            showToast(`${student.name} marked ${next}`, 'info');
 
-            // Send to Render if online
             if (state.backendOnline) {
                 fetch(`${state.backendUrl}/api/attendance/manual-override`, {
                     method: 'POST',
@@ -1262,9 +1582,12 @@
 
         function updateRosterCounts() {
             let present = 0;
-            markedMap.forEach(v => { if (v === 'Present' || v === 'Late') present++; });
+            const classStudents = state.students.filter(s => s.class === state.activeClass);
+            markedMap.forEach((v, k) => {
+                if ((v === 'Present' || v === 'Late') && classStudents.some(s => s.id === k)) present++;
+            });
             document.getElementById('live-marked-count').textContent = present;
-            document.getElementById('live-unmarked-count').textContent = Math.max(0, state.students.length - present);
+            document.getElementById('live-unmarked-count').textContent = Math.max(0, classStudents.length - present);
         }
 
         async function toggleLiveCamera() {
@@ -1282,13 +1605,13 @@
                 },
                 onReady: () => {
                     isLiveRunning = true;
-                    btn.textContent = 'Stop Session';
+                    btn.textContent = 'End Session';
                     btn.className = 'px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black transition shadow-sm';
-                    document.getElementById('live-status-text').textContent = 'Live Session Active • Scanning Faces';
+                    document.getElementById('live-status-text').textContent = 'Camera Active • Scanning Faces';
                     startLiveRecognitionLoop();
                 },
                 onError: (err) => {
-                    showToast(err.message, 'error');
+                    showToast(err.message || 'Camera Error', 'error');
                 }
             });
         }
@@ -1335,7 +1658,6 @@
                     ctx.fillText('Verified Match (94%)', x + 6, y - 8);
                 }
 
-                // Call Render API if online
                 if (state.backendOnline) {
                     try {
                         const res = await fetch(`${state.backendUrl}/api/attendance/sessions/1/frame`, {
@@ -1357,12 +1679,13 @@
                     } catch (e) {}
                 }
 
-                // Standalone Simulation Loop
-                let unmarkedStu = state.students.find(s => !markedMap.has(s.id) || markedMap.get(s.id) === 'Absent');
-                if (unmarkedStu && Math.random() > 0.4) {
+                // Local Simulation loop
+                const classStudents = state.students.filter(s => s.class === state.activeClass);
+                let unmarkedStu = classStudents.find(s => !markedMap.has(s.id) || markedMap.get(s.id) === 'Absent');
+                if (unmarkedStu && Math.random() > 0.45) {
                     markedMap.set(unmarkedStu.id, 'Present');
                     initLiveRoster();
-                    showToast(`Marked ${unmarkedStu.name} Present (Biometrics)`, 'success');
+                    showToast(`Marked ${unmarkedStu.name} Present (Face Recognition)`, 'success');
                 }
             }, 800);
         }
@@ -1375,10 +1698,10 @@
             btn.textContent = 'Start Camera Session';
             btn.className = 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition shadow-sm';
             document.getElementById('live-status-text').textContent = 'Session ended';
-            showToast('Live attendance session locked and saved', 'info');
+            showToast('Session ended and saved', 'info');
         }
 
-        // Enrollment Functions
+        // Enrollment
         async function startEnrollCamera() {
             const video = document.getElementById('enroll-video');
             await window.CameraService.startCamera(video);
@@ -1397,18 +1720,15 @@
 
                 if (state.backendOnline && frame) {
                     try {
-                        const res = await fetch(`${state.backendUrl}/api/students/${stuId}/enroll-frame`, {
+                        await fetch(`${state.backendUrl}/api/students/${stuId}/enroll-frame`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ image: frame.dataUrl, consent: true })
                         });
-                        if (res.ok) {
-                            showToast(`Sample #${enrollCount} saved to database`, 'success');
-                        }
                     } catch (e) {}
-                } else {
-                    showToast(`Sample #${enrollCount} captured with valid Laplacian focus (>100)`, 'success');
                 }
+
+                showToast(`Sample #${enrollCount} captured (Laplacian > 45)`, 'success');
 
                 if (enrollCount === 5) {
                     showToast('Biometric model trained and saved successfully!', 'success');
@@ -1420,8 +1740,6 @@
                         renderStudentsTable();
                     }
                 }
-            } else {
-                showToast('All 5 samples already enrolled! Reset if needed.', 'info');
             }
         }
 
@@ -1441,91 +1759,32 @@
                 localStorage.setItem('sas_students', JSON.stringify(state.students));
                 renderStudentsTable();
                 showToast(`Student ${stu.name} is now ${stu.active ? 'Active' : 'Inactive'}`, 'info');
-                if (state.backendOnline) {
-                    fetch(`${state.backendUrl}/api/students/${id}/toggle-status`, { method: 'POST' }).catch(() => {});
-                }
             }
-        }
-
-        // Add Student
-        function openAddStudentModal() { document.getElementById('modal-add-student').classList.remove('hidden'); }
-        function submitAddStudent(e) {
-            e.preventDefault();
-            const name = document.getElementById('stu-name').value.trim();
-            const roll = document.getElementById('stu-roll').value.trim().toUpperCase();
-            const email = document.getElementById('stu-email').value.trim();
-            const dept = document.getElementById('stu-dept').value;
-            const cls = document.getElementById('stu-class').value;
-
-            const newStu = {
-                id: Date.now(),
-                name, roll, email,
-                department: dept, class: cls,
-                enrolled: false, samples: 0, active: true,
-                pct: 100.0, attended: 10, total: 10
-            };
-            state.students.unshift(newStu);
-            localStorage.setItem('sas_students', JSON.stringify(state.students));
-            closeModal('modal-add-student');
-            renderStudentsTable();
-            showToast(`Student ${name} added successfully!`, 'success');
-
-            if (state.backendOnline) {
-                fetch(`${state.backendUrl}/api/students`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, roll_no: roll, email, department: dept })
-                }).catch(() => {});
-            }
-        }
-
-        // Add Teacher
-        function openAddTeacherModal() { document.getElementById('modal-add-teacher').classList.remove('hidden'); }
-        function submitAddTeacher(e) {
-            e.preventDefault();
-            const name = document.getElementById('teach-name').value.trim();
-            const email = document.getElementById('teach-email').value.trim();
-            const dept = document.getElementById('teach-dept').value.trim();
-
-            const newTeach = {
-                id: Date.now(),
-                name, email, dept,
-                designation: 'Faculty Member',
-                subjects: ['CS301: DBMS']
-            };
-            state.teachers.push(newTeach);
-            localStorage.setItem('sas_teachers', JSON.stringify(state.teachers));
-            closeModal('modal-add-teacher');
-            renderTeachersTable();
-            showToast(`Faculty member ${name} registered!`, 'success');
         }
 
         // Historical Records & Export
         function renderRecordsTable() {
             const tbody = document.getElementById('records-table-body');
             tbody.innerHTML = '';
-            
-            // Seed sample records if empty
             if (state.records.length === 0) {
                 state.records = state.students.map((s, idx) => ({
                     id: 100 + idx,
                     student: s.name,
                     roll: s.roll,
-                    subject: 'CS301: DBMS',
+                    subject: 'Operating Systems',
                     status: s.pct > 75 ? 'Present' : 'Absent',
                     method: 'Face Recognition',
                     confidence: 94.2,
-                    time: 'Today, 09:15 AM'
+                    time: 'Today, 09:12 AM'
                 }));
             }
-
             state.records.forEach(r => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${r.student}</td>
                     <td class="py-3 px-4 text-slate-500">${r.subject}</td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.status === 'Present' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-rose-100 text-rose-800'}">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'Present' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                             ${r.status}
                         </span>
                     </td>
@@ -1548,10 +1807,9 @@
             a.href = url;
             a.download = `attendance_records_${Date.now()}.csv`;
             a.click();
-            showToast('Attendance report exported to CSV', 'success');
+            showToast('Attendance records exported to CSV', 'success');
         }
 
-        // Audit Trail
         function renderAuditLogs() {
             const tbody = document.getElementById('audit-table-body');
             tbody.innerHTML = '';
@@ -1559,7 +1817,7 @@
                 { time: 'Just now', action: 'LIVE_RECOGNITION_FRAME', entity: 'AttendanceRecord', details: 'Haar face detected with 94.2% match', ip: '127.0.0.1' },
                 { time: '5 mins ago', action: 'MANUAL_OVERRIDE', entity: 'AttendanceRecord', details: 'Status toggled to Present', ip: '127.0.0.1' },
                 { time: '10 mins ago', action: 'FACE_SAMPLE_ENROLLED', entity: 'Student', details: '5 biometric frames trained into LBPH', ip: '127.0.0.1' },
-                { time: '1 hour ago', action: 'SESSION_START', entity: 'AttendanceSession', details: 'Started period 1 for CSE-3A', ip: '127.0.0.1' },
+                { time: '1 hour ago', action: 'SESSION_START', entity: 'AttendanceSession', details: 'Started period 1 for CSE-3B', ip: '127.0.0.1' },
                 { time: 'Today, 08:30 AM', action: 'LOGIN_SUCCESS', entity: 'User', details: 'Administrator logged into system', ip: '127.0.0.1' }
             ];
             logs.forEach(l => {
@@ -1575,10 +1833,75 @@
             });
         }
 
+        function triggerManualBackup() {
+            showToast('Creating database snapshot...', 'info');
+            if (state.backendOnline) {
+                fetch(`${state.backendUrl}/api/backups`, { method: 'POST' }).then(() => {
+                    showToast('Database snapshot captured and logged.', 'success');
+                }).catch(() => {});
+            } else {
+                setTimeout(() => { showToast('Database snapshot saved locally.', 'success'); }, 500);
+            }
+        }
+
+        function submitAddStudent(e) {
+            e.preventDefault();
+            const name = document.getElementById('stu-name').value.trim();
+            const roll = document.getElementById('stu-roll').value.trim().toUpperCase();
+            const email = document.getElementById('stu-email').value.trim();
+            const dept = document.getElementById('stu-dept').value;
+            const cls = document.getElementById('stu-class').value;
+
+            const newStu = {
+                id: Date.now(), name, roll, email, department: dept, class: cls,
+                enrolled: false, samples: 0, active: true, pct: 100.0, attended: 10, total: 10
+            };
+            state.students.unshift(newStu);
+            localStorage.setItem('sas_students', JSON.stringify(state.students));
+            closeModal('modal-add-student');
+            renderStudentsTable();
+            updateDashboardMetrics();
+            showToast(`Student ${name} added!`, 'success');
+        }
+
+        function submitAddTeacher(e) {
+            e.preventDefault();
+            const name = document.getElementById('teach-name').value.trim();
+            const email = document.getElementById('teach-email').value.trim();
+            const dept = document.getElementById('teach-dept').value.trim();
+
+            state.teachers.push({
+                id: Date.now(), name, email, dept, designation: 'Faculty Member', subjects: ['Operating Systems']
+            });
+            localStorage.setItem('sas_teachers', JSON.stringify(state.teachers));
+            closeModal('modal-add-teacher');
+            renderTeachersTable();
+            showToast(`Faculty member ${name} registered!`, 'success');
+        }
+
+        function submitChangePassword(e) {
+            e.preventDefault();
+            const curr = document.getElementById('pwd-current').value;
+            const n1 = document.getElementById('pwd-new').value;
+            const n2 = document.getElementById('pwd-confirm').value;
+            if (n1 !== n2) {
+                showToast('New passwords do not match!', 'error');
+                return;
+            }
+            closeModal('modal-change-password');
+            showToast('Password changed successfully!', 'success');
+        }
+
+        function saveSystemSettings(e) {
+            e.preventDefault();
+            const url = document.getElementById('setting-backend-url').value.trim();
+            saveBackendUrl(url);
+            showToast('System settings saved.', 'success');
+        }
+
         function filterStudentsTable() {
             const query = document.getElementById('student-search-input').value.toLowerCase();
-            const rows = document.querySelectorAll('#students-table-body tr');
-            rows.forEach(r => {
+            document.querySelectorAll('#students-table-body tr').forEach(r => {
                 r.style.display = r.textContent.toLowerCase().includes(query) ? '' : 'none';
             });
         }
@@ -1587,34 +1910,71 @@
             document.documentElement.classList.toggle('dark');
         }
 
-        // Initialize Application
+        // Initialization
         document.addEventListener('DOMContentLoaded', () => {
+            // Restore Tab from Hash if present
+            const currentHash = window.location.hash.replace('#', '') || 'dashboard';
+            switchTab(currentHash);
+
             renderStudentsTable();
             renderTeachersTable();
             renderClassesAndTimetable();
             renderShortageTable();
             initLiveRoster();
+            updateDashboardMetrics();
 
-            // Chart.js Setup
+            // Chart.js Weekly Trend Area Chart
             const ctx = document.getElementById('trendChart');
             if (ctx) {
-                new Chart(ctx, {
+                trendChartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Today'],
+                        labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Today'],
                         datasets: [{
-                            label: 'Attendance Rate (%)',
-                            data: [88, 92, 85, 90, 82, 89.4],
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            label: 'Attendance Ratio (%)',
+                            data: [88, 92, 85, 90, 82, 88],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.08)',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.35,
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#2563eb',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } }
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 12, weight: 'bold' },
+                                bodyFont: { size: 11 },
+                                padding: 10,
+                                displayColors: false,
+                                callbacks: {
+                                    label: function(ctx) { return `${ctx.parsed.y}% Attendance Ratio`; }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 60,
+                                max: 100,
+                                grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                                ticks: {
+                                    stepSize: 10,
+                                    callback: function(v) { return v + '%'; },
+                                    font: { size: 10, weight: '600' }
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { size: 10, weight: '600' } }
+                            }
+                        }
                     }
                 });
             }

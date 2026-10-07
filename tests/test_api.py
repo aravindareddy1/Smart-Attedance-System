@@ -119,3 +119,35 @@ def test_api_diagnostics_and_audit(client, app):
     data = res.get_json()
     assert data['success'] is True
     assert 'logs' in data
+
+
+def test_api_holidays_settings_backups_profile(client, app):
+    # Profile
+    res = client.get('/api/user/profile')
+    assert res.status_code == 200
+    assert 'user' in res.get_json()
+
+    # Settings
+    res = client.get('/api/settings')
+    assert res.status_code == 200
+    assert res.get_json()['success'] is True
+
+    # Save Settings
+    res = client.post('/api/settings', json={'attendance_threshold': '80.0'})
+    assert res.status_code == 200
+
+    # Holidays
+    res = client.get('/api/holidays')
+    assert res.status_code == 200
+
+    res = client.post('/api/holidays', json={'name': 'Founder Day', 'date': '2026-11-15', 'description': 'Holiday'})
+    assert res.status_code == 201
+
+    # Backups
+    res = client.get('/api/backups')
+    assert res.status_code == 200
+    assert res.get_json()['success'] is True
+
+    res = client.post('/api/backups')
+    assert res.status_code == 200
+
