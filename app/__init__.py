@@ -2,6 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from flask import Flask, jsonify
+from flask_cors import CORS
 from app.config import config
 from app.extensions import db, migrate, login_manager, csrf
 from app.error_handlers import register_error_handlers
@@ -10,6 +11,7 @@ from app.services.face_service import get_face_engine
 
 def create_app(config_name: str = 'default') -> Flask:
     app = Flask(__name__)
+    CORS(app, resources={r"/api/*": {"origins": "*"}, r"/attendance/api/*": {"origins": "*"}}, supports_credentials=True)
     app.config.from_object(config[config_name])
 
     # Ensure required data directories exist
@@ -90,3 +92,4 @@ def create_app(config_name: str = 'default') -> Flask:
     app.logger.info(f"Active Face Recognition Engine: {engine.engine_name}")
 
     return app
+
