@@ -48,10 +48,12 @@ def create_app(config_name: str = 'default') -> Flask:
     from app.reports import bp as reports_bp
     from app.analytics import bp as analytics_bp
     from app.student import bp as student_bp
+    from app.api import bp as api_bp
 
-    # Exempt internal live camera frame API and enroll frame API from CSRF form token requirement
+    # Exempt internal live camera frame API and REST API blueprint from CSRF form token requirement
     csrf.exempt(attendance_bp)
     csrf.exempt(analytics_bp)
+    csrf.exempt(api_bp)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -59,6 +61,7 @@ def create_app(config_name: str = 'default') -> Flask:
     app.register_blueprint(reports_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(student_bp)
+    app.register_blueprint(api_bp)
 
     # Register error handlers
     register_error_handlers(app)
