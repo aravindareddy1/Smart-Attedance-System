@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}System Diagnostics{% endblock %}
+{% block page_title %}System Health & Engine Diagnostics{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Diagnostics Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+        
+        <div class="flex items-center space-x-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">System Diagnostics & Environment</h2>
+                <p class="text-xs text-slate-500">Live operational status, active face recognition engines, and runtime parameters</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            {% for key, val in info.items() %}
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ key.replace('_', ' ') }}</span>
+                <span class="font-mono font-bold text-xs px-2.5 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100">
+                    {{ val }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 leading-relaxed">
+            <p><strong>Note on Face Recognition Engine:</strong> The system automatically selects the best available engine. When OpenCV-LBPH is active, it runs native local binary patterns histograms and Haar cascade detectors without requiring external C++ dependencies or dlib.</p>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

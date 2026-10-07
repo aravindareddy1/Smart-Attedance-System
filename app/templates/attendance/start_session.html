@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Start Attendance Session{% endblock %}
+{% block page_title %}Initiate Attendance{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+        
+        <div class="flex items-center space-x-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Start Attendance Session</h2>
+                <p class="text-xs text-slate-500">Configure class and session parameters before starting webcam or manual roll call</p>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('attendance.start_session') }}" id="session-form" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="session_type" id="session-type-input" value="live">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Classroom <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="class_id" id="class-select" required
+                            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if initial_class_id == c.id %}selected{% endif %}>{{ c.name }} ({{ c.department }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Subject <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="subject_id" id="subject-select" required
+                            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        {% for s in subjects %}
+                        <option value="{{ s.id }}" data-class="{{ s.class_id }}" {% if initial_subject_id == s.id %}selected{% endif %}>
+                            {{ s.code }} - {{ s.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Period Number <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" name="period" min="1" max="12" value="{{ initial_period }}" required
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Session Date <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="date" name="date" value="{{ today_date }}" required
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+            </div>
+
+            <!-- Pre-session Class Overview Card -->
+            {% if selected_class %}
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <div class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Class Enrollment Status</div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500">Total Enrolled Students: <strong class="text-slate-800 dark:text-slate-100">{{ total_students }}</strong></span>
+                    <span class="text-slate-500">Biometric Face Enrolled: <strong class="text-emerald-600">{{ enrolled_students }}</strong></span>
+                </div>
+                {% if enrolled_students < total_students %}
+                <p class="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                    ⚠️ {{ total_students - enrolled_students }} student(s) in this class do not have face biometrics enrolled yet. You can mark them manually during or after the live session.
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Action Trigger Buttons -->
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-end gap-3">
+                <a href="{{ url_for('attendance.teacher_dashboard') }}" class="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-center transition">
+                    Cancel
+                </a>
+                <button type="button" onclick="submitSession('manual')" class="w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-xl transition">
+                    Use Manual Attendance
+                </button>
+                <button type="button" onclick="submitSession('live')" class="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Start Live Face Attendance
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitSession(type) {
+    document.getElementById('session-type-input').value = type;
+    document.getElementById('session-form').submit();
+}
+
+// Auto filter subjects based on selected class
+const classSelect = document.getElementById('class-select');
+const subjectSelect = document.getElementById('subject-select');
+
+function filterSubjects() {
+    const selectedClassId = classSelect.value;
+    let firstVisible = null;
+
+    Array.from(subjectSelect.options).forEach(opt => {
+        const optClassId = opt.getAttribute('data-class');
+        if (!optClassId || optClassId === selectedClassId) {
+            opt.style.display = 'block';
+            if (!firstVisible) firstVisible = opt;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (firstVisible && subjectSelect.selectedOptions[0].style.display === 'none') {
+        subjectSelect.value = firstVisible.value;
+    }
+}
+
+classSelect.addEventListener('change', filterSubjects);
+document.addEventListener('DOMContentLoaded', filterSubjects);
+</script>
+{% endblock %}

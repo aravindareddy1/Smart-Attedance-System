@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Not Found{% endblock %}
+{% block page_title %}Student Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <div class="w-16 h-16 mx-auto mb-4 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+    </div>
+    <h2 class="text-xl font-black text-slate-900 dark:text-white mb-2">Student Profile Not Linked</h2>
+    <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+        Your user account has not yet been linked to an enrolled student record in the institutional database. Please notify your administrator or teacher.
+    </p>
+    <a href="{{ url_for('auth.logout') }}" class="px-5 py-2.5 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-900 transition">
+        Sign Out
+    </a>
+</div>
+{% endblock %}

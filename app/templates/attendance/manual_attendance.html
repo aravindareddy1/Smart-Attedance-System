@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Attendance — {{ session.classroom.name }}{% endblock %}
+{% block page_title %}Manual Roll Call: {{ session.classroom.name }} • {{ session.subject.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+
+    <!-- Session Info Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <h2 class="text-base font-black text-slate-900 dark:text-white">{{ session.classroom.name }} — {{ session.subject.name }} (Period {{ session.period }})</h2>
+            <p class="text-xs text-slate-500">Date: {{ session.date.strftime('%B %d, %Y') }} • Faculty: {{ session.teacher.name }}</p>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('attendance.live_attendance', session_id=session.id) }}" class="px-4 py-2 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-bold rounded-xl text-xs hover:bg-blue-100 transition">
+                ← Return to Live Camera
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Bulk Actions & Search -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center space-x-2 flex-wrap">
+            <span class="font-bold text-slate-500">Quick Mark:</span>
+            <button type="button" onclick="setAllStatuses('Present')" class="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold rounded-lg hover:bg-emerald-200 transition">
+                All Present
+            </button>
+            <button type="button" onclick="setAllStatuses('Absent')" class="px-3 py-1.5 bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 font-bold rounded-lg hover:bg-rose-200 transition">
+                All Absent
+            </button>
+            <button type="button" onclick="setAllStatuses('Late')" class="px-3 py-1.5 bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold rounded-lg hover:bg-amber-200 transition">
+                All Late
+            </button>
+        </div>
+
+        <div class="relative min-w-[220px]">
+            <input type="text" id="student-search-input" placeholder="Search student name / roll..."
+                   class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+    </div>
+
+    <!-- Manual Roster Table Form -->
+    <form method="POST" action="{{ url_for('attendance.manual_attendance', session_id=session.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm" id="manual-roster-table">
+                    <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <tr>
+                            <th class="py-3.5 px-4">Roll Number</th>
+                            <th class="py-3.5 px-4">Student Name</th>
+                            <th class="py-3.5 px-4">Attendance Status</th>
+                            <th class="py-3.5 px-4">Note / Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for stu in students %}
+                        {% set current_status = marked_map[stu.id].status if stu.id in marked_map else 'Present' %}
+                        {% set current_note = marked_map[stu.id].note if stu.id in marked_map else '' %}
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition student-row" data-name="{{ stu.name|lower }}" data-roll="{{ stu.roll_no|lower }}">
+                            <td class="py-3.5 px-4 font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
+                                {{ stu.roll_no }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-slate-900 dark:text-white">{{ stu.name }}</div>
+                                <div class="text-xs text-slate-400">{{ stu.email }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <select name="status_{{ stu.id }}" class="status-select px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold">
+                                    <option value="Present" {% if current_status == 'Present' %}selected{% endif %}>Present</option>
+                                    <option value="Absent" {% if current_status == 'Absent' %}selected{% endif %}>Absent</option>
+                                    <option value="Late" {% if current_status == 'Late' %}selected{% endif %}>Late</option>
+                                    <option value="Excused" {% if current_status == 'Excused' %}selected{% endif %}>Excused</option>
+                                </select>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <input type="text" name="note_{{ stu.id }}" value="{{ current_note }}" placeholder="Optional note..."
+                                       class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pb-8">
+            <button type="submit" name="action" value="save" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition">
+                Save Progress
+            </button>
+            <button type="submit" name="action" value="save_and_end" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/25 transition">
+                Save & End Session
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setAllStatuses(status) {
+    document.querySelectorAll('.status-select').forEach(select => {
+        select.value = status;
+    });
+}
+
+document.getElementById('student-search-input').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    document.querySelectorAll('.student-row').forEach(row => {
+        const name = row.getAttribute('data-name');
+        const roll = row.getAttribute('data-roll');
+        if (name.includes(term) || roll.includes(term)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

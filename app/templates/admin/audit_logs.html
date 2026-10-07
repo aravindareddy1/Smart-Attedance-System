@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}System Audit Logs{% endblock %}
+{% block page_title %}Security Audit Trail{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <form method="GET" action="{{ url_for('admin.audit_logs') }}" class="flex flex-wrap items-center gap-3 flex-1">
+            <input type="text" name="action" value="{{ action_filter or '' }}" placeholder="Filter by action..."
+                   class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium">
+            <input type="text" name="entity" value="{{ entity_filter or '' }}" placeholder="Filter by entity (e.g. Student, User)..."
+                   class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium">
+            <button type="submit" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition">Filter</button>
+            {% if action_filter or entity_filter %}
+            <a href="{{ url_for('admin.audit_logs') }}" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp</th>
+                        <th class="py-3 px-4">User</th>
+                        <th class="py-3 px-4">Action</th>
+                        <th class="py-3 px-4">Entity</th>
+                        <th class="py-3 px-4">Details</th>
+                        <th class="py-3 px-4 text-right">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for log in pagination.items %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs">
+                        <td class="py-3.5 px-4 font-mono text-slate-500 whitespace-nowrap">
+                            {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                        </td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                            {{ log.user.name if log.user else 'System' }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                {{ log.action }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                            {{ log.entity_type }}{% if log.entity_id %} #{{ log.entity_id }}{% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-[11px] text-slate-500 max-w-xs truncate" title="{{ log.details }}">
+                            {{ log.details or '-' }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-slate-400">
+                            {{ log.ip_address or '127.0.0.1' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 text-sm">No audit logs found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+            <div>Showing page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages or 1 }}</strong> (Total: {{ pagination.total }})</div>
+            <div class="flex items-center space-x-1">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('admin.audit_logs', page=pagination.prev_num, action=action_filter, entity=entity_filter) }}" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 font-bold">Prev</a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('admin.audit_logs', page=pagination.next_num, action=action_filter, entity=entity_filter) }}" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 font-bold">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

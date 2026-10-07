@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Students Management{% endblock %}
+{% block page_title %}Students Directory{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Actions & Filters -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <!-- Filter form -->
+        <form method="GET" action="{{ url_for('admin.students') }}" class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative min-w-[200px] flex-1 max-w-sm">
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search by name, roll no, email..."
+                       class="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <select name="class_id" class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Classes</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.name }} ({{ c.department }})</option>
+                {% endfor %}
+            </select>
+
+            <select name="enrolled" class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Biometric States</option>
+                <option value="yes" {% if enrolled_filter == 'yes' %}selected{% endif %}>Face Enrolled</option>
+                <option value="no" {% if enrolled_filter == 'no' %}selected{% endif %}>Not Enrolled</option>
+            </select>
+
+            <button type="submit" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition">
+                Filter
+            </button>
+            {% if search or selected_class_id or enrolled_filter %}
+            <a href="{{ url_for('admin.students') }}" class="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+                Clear
+            </a>
+            {% endif %}
+        </form>
+
+        <!-- Right Buttons -->
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('admin.import_students') }}" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 transition">
+                Import CSV
+            </a>
+            <a href="{{ url_for('admin.add_student') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition">
+                + Add Student
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Students Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        
+        {% if pagination.items %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3.5 px-4">Roll Number</th>
+                        <th class="py-3.5 px-4">Student Details</th>
+                        <th class="py-3.5 px-4">Class & Dept</th>
+                        <th class="py-3.5 px-4 text-center">Face Biometrics</th>
+                        <th class="py-3.5 px-4 text-center">Account Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for stu in pagination.items %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-800 dark:text-slate-200 text-xs">
+                            {{ stu.roll_no }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900 dark:text-white">{{ stu.name }}</div>
+                            <div class="text-xs text-slate-400">{{ stu.email }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <div class="font-semibold text-slate-700 dark:text-slate-300">{{ stu.classroom.name if stu.classroom else '-' }}</div>
+                            <div class="text-slate-400">Year {{ stu.year }} (Sec {{ stu.section }})</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if stu.face_enrolled %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                                Enrolled
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300">
+                                Not Enrolled
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300' if stu.is_active else 'bg-rose-100 text-rose-800' }}">
+                                {{ 'Active' if stu.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right space-x-1.5">
+                            <a href="{{ url_for('admin.enroll_student_face', id=stu.id) }}" class="px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/80 hover:bg-blue-100 rounded-lg transition" title="Enroll Face Samples">
+                                Biometrics
+                            </a>
+                            <a href="{{ url_for('admin.edit_student', id=stu.id) }}" class="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition" title="Edit Student">
+                                Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.toggle_student_status', id=stu.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-2.5 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 rounded-lg transition" title="{{ 'Deactivate' if stu.is_active else 'Activate' }}">
+                                    {{ 'Disable' if stu.is_active else 'Enable' }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+            <div>
+                Showing <strong>{{ (pagination.page - 1) * pagination.per_page + 1 }}</strong> to <strong>{{ [pagination.page * pagination.per_page, pagination.total]|min }}</strong> of <strong>{{ pagination.total }}</strong> students
+            </div>
+            <div class="flex items-center space-x-1">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('admin.students', page=pagination.prev_num, search=search, class_id=selected_class_id, enrolled=enrolled_filter) }}" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 font-bold transition">Previous</a>
+                {% endif %}
+                <span class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-bold">Page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>
+                {% if pagination.has_next %}
+                <a href="{{ url_for('admin.students', page=pagination.next_num, search=search, class_id=selected_class_id, enrolled=enrolled_filter) }}" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 font-bold transition">Next</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-12 h-12 mx-auto text-slate-400 mb-3">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">No students found</h3>
+            <p class="text-xs text-slate-500 mt-1">Add your first student or import a student roster via CSV.</p>
+            <div class="mt-4">
+                <a href="{{ url_for('admin.add_student') }}" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition">
+                    + Add New Student
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}

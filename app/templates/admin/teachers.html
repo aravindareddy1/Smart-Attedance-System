@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Teachers Management{% endblock %}
+{% block page_title %}Faculty Directory{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Actions -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        <form method="GET" action="{{ url_for('admin.teachers') }}" class="flex items-center gap-3 flex-1 max-w-sm">
+            <div class="relative w-full">
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search teacher by name or email..."
+                       class="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition">Search</button>
+        </form>
+
+        <a href="{{ url_for('admin.add_teacher') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition">
+            + Add Teacher
+        </a>
+    </div>
+
+    <!-- Teachers Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3.5 px-4">Teacher Name</th>
+                        <th class="py-3.5 px-4">Email Address</th>
+                        <th class="py-3.5 px-4">Assigned Subjects</th>
+                        <th class="py-3.5 px-4 text-center">Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for t in pagination.items %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            {{ t.name }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs font-mono text-slate-600 dark:text-slate-300">
+                            {{ t.email }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">
+                                {{ t.taught_subjects.count() }} Subjects
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ 'bg-emerald-100 text-emerald-800' if t.is_active else 'bg-rose-100 text-rose-800' }}">
+                                {{ 'Active' if t.is_active else 'Disabled' }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right space-x-2">
+                            <a href="{{ url_for('admin.edit_teacher', id=t.id) }}" class="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition">
+                                Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.toggle_teacher_status', id=t.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-2.5 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 rounded-lg transition">
+                                    {{ 'Disable' if t.is_active else 'Enable' }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400 text-sm">No teachers registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

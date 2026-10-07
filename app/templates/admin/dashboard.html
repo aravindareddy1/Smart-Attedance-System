@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Institutional Overview{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Quick Action Bar -->
+    <div class="flex items-center justify-between flex-wrap gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div>
+            <h2 class="text-xl font-black text-slate-900 dark:text-white">Admin Control Center</h2>
+            <p class="text-xs text-slate-500">Manage institution, sessions, users, and biometrics</p>
+        </div>
+        <div class="flex items-center flex-wrap gap-2">
+            <a href="{{ url_for('attendance.start_session') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                Start Session
+            </a>
+            <a href="{{ url_for('admin.add_student') }}" class="px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center">
+                + Add Student
+            </a>
+            <a href="{{ url_for('admin.import_students') }}" class="px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center">
+                Import CSV
+            </a>
+            <a href="{{ url_for('admin.add_teacher') }}" class="px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition flex items-center">
+                + Add Teacher
+            </a>
+        </div>
+    </div>
+
+    <!-- Top KPI Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Total Students -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Students</span>
+                <div class="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ summary.total_students }}</div>
+            <div class="mt-2 text-xs text-slate-500 flex items-center">
+                <span class="text-emerald-600 font-bold mr-1">{{ summary.face_coverage_pct }}%</span> face enrolled
+            </div>
+        </div>
+
+        <!-- Today's Attendance -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Today's Present</span>
+                <div class="p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ summary.today_present_pct }}%</div>
+            <div class="mt-2 text-xs text-slate-500">
+                <span class="font-bold text-slate-700 dark:text-slate-300">{{ summary.sessions_today }}</span> sessions conducted today
+            </div>
+        </div>
+
+        <!-- Average Attendance -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Avg Attendance</span>
+                <div class="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ summary.avg_attendance_pct }}%</div>
+            <div class="mt-2 text-xs text-slate-500">Across all classes & subjects</div>
+        </div>
+
+        <!-- Shortage Warning -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Below {{ summary.threshold }}%</span>
+                <div class="p-2 bg-rose-50 dark:bg-rose-950/60 text-rose-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-rose-600">{{ summary.students_below_threshold }}</div>
+            <div class="mt-2 text-xs text-slate-500">
+                <a href="{{ url_for('reports.shortage') }}" class="text-rose-600 hover:underline font-bold">View Shortage List →</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Recent Sessions & Activity Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Recent Attendance Sessions (2 Cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Recent Attendance Sessions</h3>
+                <a href="{{ url_for('attendance.records') }}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">View All Records →</a>
+            </div>
+
+            {% if recent_sessions %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
+                            <th class="pb-3">Class & Subject</th>
+                            <th class="pb-3">Teacher</th>
+                            <th class="pb-3">Date / Period</th>
+                            <th class="pb-3 text-center">Status</th>
+                            <th class="pb-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {% for s in recent_sessions %}
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-3.5">
+                                <div class="font-bold text-slate-800 dark:text-slate-100">{{ s.classroom.name }}</div>
+                                <div class="text-xs text-slate-500">{{ s.subject.code }} - {{ s.subject.name }}</div>
+                            </td>
+                            <td class="py-3.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                {{ s.teacher.name }}
+                            </td>
+                            <td class="py-3.5 text-xs">
+                                <div class="font-semibold text-slate-700 dark:text-slate-200">{{ s.date.strftime('%Y-%m-%d') }}</div>
+                                <div class="text-slate-400">Period {{ s.period }}</div>
+                            </td>
+                            <td class="py-3.5 text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+                                    {% if s.status == 'active' %}bg-emerald-100 text-emerald-800
+                                    {% elif s.status == 'ended' %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300
+                                    {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                    {{ s.status|capitalize }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 text-right">
+                                <a href="{{ url_for('attendance.session_summary', session_id=s.id) }}" class="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition">
+                                    Summary
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-slate-400 text-sm">
+                No attendance sessions recorded yet.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Audit Events (1 Col) -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Audit Trail</h3>
+                <a href="{{ url_for('admin.audit_logs') }}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Full Log →</a>
+            </div>
+
+            <div class="flex-1 space-y-3 overflow-y-auto max-h-96 pr-1">
+                {% for audit in recent_audits %}
+                <div class="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-800 text-xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-slate-800 dark:text-slate-100 truncate">{{ audit.action }}</span>
+                        <span class="text-[10px] text-slate-400">{{ audit.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                    <div class="text-slate-500 truncate">
+                        By: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ audit.user.name if audit.user else 'System' }}</span>
+                        {% if audit.entity_type %}({{ audit.entity_type }}){% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-slate-400 text-sm">
+                    No recent audit activity.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

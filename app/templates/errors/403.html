@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error 403 — Forbidden{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <div class="text-7xl font-black text-rose-600 dark:text-rose-400 font-mono mb-2">403</div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Access Denied</h2>
+    <p class="text-xs text-slate-500 mb-6">You do not have the necessary role or permissions to access this institutional resource.</p>
+    <a href="{{ url_for('auth.dashboard') }}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition inline-block">
+        ← Return to Safe Dashboard
+    </a>
+</div>
+{% endblock %}

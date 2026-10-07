@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Exports{% endblock %}
+{% block page_title %}Institutional Reports & Data Exports{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-5xl mx-auto">
+
+    <!-- Overview -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+        <h2 class="text-xl font-black text-slate-900 dark:text-white mb-2">Generate Reports</h2>
+        <p class="text-xs text-slate-500">Export filtered attendance registers, monthly summaries, and shortage lists as CSV or styled Excel (.xlsx) workbooks.</p>
+    </div>
+
+    <!-- Report Types Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Master Attendance Export -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+                <div class="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-2xl w-fit mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Master Attendance Register</h3>
+                <p class="text-xs text-slate-500 mt-1">Complete attendance records across all classes and sessions with full audit trails.</p>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <a href="{{ url_for('reports.export_csv') }}" class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs text-center transition">
+                    Export CSV
+                </a>
+                <a href="{{ url_for('reports.export_xlsx') }}" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs text-center shadow-md shadow-emerald-500/20 transition">
+                    Export Excel (.xlsx)
+                </a>
+            </div>
+        </div>
+
+        <!-- Attendance Shortage Report -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+                <div class="p-3 bg-rose-100 dark:bg-rose-950 text-rose-600 rounded-2xl w-fit mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Attendance Shortage List</h3>
+                <p class="text-xs text-slate-500 mt-1">Identifies students falling below the mandatory minimum percentage threshold with recovery projection.</p>
+            </div>
+
+            <div class="pt-2">
+                <a href="{{ url_for('reports.shortage') }}" class="block w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs text-center shadow-md shadow-rose-500/20 transition">
+                    View Shortage Analytics →
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom Filtered Report Generator Form -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Custom Report Filter</h3>
+        
+        <form method="GET" action="{{ url_for('reports.export_xlsx') }}" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-500 uppercase mb-1">From Date</label>
+                    <input type="date" name="date_from" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-500 uppercase mb-1">To Date</label>
+                    <input type="date" name="date_to" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-500 uppercase mb-1">Classroom</label>
+                    <select name="class_id" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                        <option value="">All Classes</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-500 uppercase mb-1">Subject</label>
+                    <select name="subject_id" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                        <option value="">All Subjects</option>
+                        {% for s in subjects %}
+                        <option value="{{ s.id }}">{{ s.code }} - {{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-4 flex items-center justify-end space-x-3">
+                <button type="submit" formaction="{{ url_for('reports.export_csv') }}" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition">
+                    Download CSV
+                </button>
+                <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/25 transition">
+                    Download Styled Excel (.xlsx)
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

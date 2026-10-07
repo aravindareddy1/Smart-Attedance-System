@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Session Summary #{{ session.id }}{% endblock %}
+{% block page_title %}Session Attendance Summary{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+
+    <!-- Header Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    Session #{{ session.id }}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800">
+                    {{ session.status }}
+                </span>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 dark:text-white">{{ session.classroom.name }} — {{ session.subject.name }}</h2>
+            <p class="text-xs text-slate-500">Conducted by {{ session.teacher.name }} on {{ session.date.strftime('%B %d, %Y') }} (Period {{ session.period }})</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('attendance.records', class_id=session.class_id, subject_id=session.subject_id) }}" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition">
+                View in Records
+            </a>
+            <a href="{{ url_for('attendance.teacher_dashboard') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition">
+                Return to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Breakdown Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl">
+            <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Present</div>
+            <div class="text-2xl font-black text-emerald-600 mt-1">{{ stats.present }}</div>
+        </div>
+
+        <div class="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/80 rounded-2xl">
+            <div class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">Late</div>
+            <div class="text-2xl font-black text-amber-600 mt-1">{{ stats.late }}</div>
+        </div>
+
+        <div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/80 rounded-2xl">
+            <div class="text-xs font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider">Absent</div>
+            <div class="text-2xl font-black text-rose-600 mt-1">{{ stats.absent }}</div>
+        </div>
+
+        <div class="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 rounded-2xl">
+            <div class="text-xs font-bold text-blue-800 dark:text-blue-300 uppercase tracking-wider">Excused</div>
+            <div class="text-2xl font-black text-blue-600 mt-1">{{ stats.excused }}</div>
+        </div>
+    </div>
+
+    <!-- Student Attendance List -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Individual Student Records</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Roll Number</th>
+                        <th class="py-3 px-4">Student Name</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4">Method</th>
+                        <th class="py-3 px-4">Confidence / Note</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for r in records %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs">
+                        <td class="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {{ r.student.roll_no }}
+                        </td>
+                        <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">
+                            {{ r.student.name }}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+                                {% if r.status == 'Present' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300
+                                {% elif r.status == 'Late' %}bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300
+                                {% elif r.status == 'Absent' %}bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300
+                                {% else %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300{% endif %}">
+                                {{ r.status }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 uppercase font-mono font-semibold text-slate-500">
+                            {{ r.method }}
+                        </td>
+                        <td class="py-3 px-4 text-slate-500">
+                            {% if r.confidence %}<span class="font-bold text-emerald-600 mr-1">{{ (r.confidence * 100)|round }}% match</span>{% endif %}
+                            {{ r.note or '' }}
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            <a href="{{ url_for('attendance.override_record', record_id=r.id) }}" class="px-2.5 py-1 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 rounded-lg transition">
+                                Override
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

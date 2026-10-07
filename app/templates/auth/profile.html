@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile{% endblock %}
+{% block page_title %}Account Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Profile Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                {{ current_user.name[:2].upper() }}
+            </div>
+            <div class="text-center sm:text-left flex-1">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">{{ current_user.name }}</h2>
+                        <p class="text-sm text-slate-500">{{ current_user.email }}</p>
+                    </div>
+                    <span class="inline-flex self-center sm:self-start items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                        {{ current_user.role }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 text-sm">
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Account Status</div>
+                <div class="font-bold flex items-center text-slate-800 dark:text-slate-100">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
+                    {{ 'Active' if current_user.is_active else 'Deactivated' }}
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Last Login</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">
+                    {{ current_user.last_login_at.strftime('%Y-%m-%d %H:%M') if current_user.last_login_at else 'First Session' }}
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Member Since</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">
+                    {{ current_user.created_at.strftime('%B %d, %Y') if current_user.created_at else '-' }}
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Security Credentials</div>
+                <a href="{{ url_for('auth.change_password') }}" class="inline-flex items-center text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline mt-0.5">
+                    Update Password →
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

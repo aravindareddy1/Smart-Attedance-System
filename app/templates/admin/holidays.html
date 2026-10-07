@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Holiday Calendar{% endblock %}
+{% block page_title %}Institutional Holidays{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Add Holiday Form (1 Col) -->
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm h-fit">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Add Holiday</h3>
+        <form method="POST" action="{{ url_for('admin.holidays') }}" class="space-y-4">
+            {{ form.hidden_tag() }}
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Holiday Date</label>
+                <input type="date" name="{{ form.date.name }}" required
+                       class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Title</label>
+                <input type="text" name="{{ form.name.name }}" required placeholder="e.g. Independence Day"
+                       class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                <textarea name="{{ form.description.name }}" rows="2" placeholder="Optional details..."
+                          class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs"></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition">
+                Save Holiday
+            </button>
+        </form>
+    </div>
+
+    <!-- Holidays List (2 Cols) -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Scheduled Holidays</h3>
+            <span class="text-xs font-bold text-slate-400">{{ holidays|length }} Holidays</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Date</th>
+                        <th class="py-3 px-4">Holiday Name</th>
+                        <th class="py-3 px-4">Description</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for h in holidays %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white text-xs">
+                            {{ h.date.strftime('%Y-%m-%d') }}
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-100">
+                            {{ h.name }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500">
+                            {{ h.description or '-' }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <form method="POST" action="{{ url_for('admin.delete_holiday', id=h.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-2.5 py-1 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg">
+                                    Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-slate-400 text-sm">No holidays recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

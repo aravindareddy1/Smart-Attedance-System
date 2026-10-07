@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Shortage List{% endblock %}
+{% block page_title %}Students Below {{ threshold }}% Attendance Threshold{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+
+    <!-- Header & Class Filter -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-black uppercase bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    Threshold: {{ threshold }}%
+                </span>
+                <span class="text-xs text-slate-500 font-bold">Defaulters: {{ shortages|length }}</span>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 dark:text-white">Attendance Shortage Defaulters</h2>
+            <p class="text-xs text-slate-500">Students highlighted below require immediate intervention to satisfy minimum attendance criteria.</p>
+        </div>
+
+        <form method="GET" action="{{ url_for('reports.shortage') }}" class="flex items-center space-x-2">
+            <select name="class_id" onchange="this.form.submit()"
+                    class="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold">
+                <option value="">All Classrooms</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Shortage List Table -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3.5 px-4">Roll Number</th>
+                        <th class="py-3.5 px-4">Student Name</th>
+                        <th class="py-3.5 px-4">Class</th>
+                        <th class="py-3.5 px-4 text-center">Sessions (Attended/Total)</th>
+                        <th class="py-3.5 px-4 text-center">Current %</th>
+                        <th class="py-3.5 px-4 text-right">Recovery Projection</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for item in shortages %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs">
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
+                            {{ item.roll_no }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900 dark:text-white">{{ item.name }}</div>
+                            <div class="text-slate-400">{{ item.email }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-semibold">
+                            {{ item.class_name }}
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono font-semibold text-slate-700 dark:text-slate-300">
+                            {{ item.attended_sessions }} / {{ item.total_sessions }}
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full font-mono font-black text-xs bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300">
+                                {{ item.percentage }}%
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            {% if item.consecutive_classes_needed > 0 %}
+                            <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 rounded-lg font-bold text-[11px]">
+                                Must attend next {{ item.consecutive_classes_needed }} classes
+                            </span>
+                            {% elif item.consecutive_classes_needed == 0 %}
+                            <span class="text-emerald-600 font-bold">Eligible</span>
+                            {% else %}
+                            <span class="text-rose-500 font-bold">Impossible this term</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-slate-400 text-sm">
+                            🎉 Excellent! No students are currently below the {{ threshold }}% attendance threshold.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

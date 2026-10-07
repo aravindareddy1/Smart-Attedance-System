@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error 422 — Unprocessable Entity{% endblock %}
+{% block page_title %}Validation Failed{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <div class="text-7xl font-black text-amber-500 font-mono mb-2">422</div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Validation Error</h2>
+    <p class="text-xs text-slate-500 mb-6">The server could not process the submitted data instructions due to semantic validation failures.</p>
+    <a href="{{ url_for('auth.dashboard') }}" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition inline-block">
+        ← Return to Dashboard
+    </a>
+</div>
+{% endblock %}

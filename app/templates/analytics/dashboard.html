@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+{% block page_title %}Attendance Analytics & Visualizations{% endblock %}
+
+{% block content %}
+<div id="analytics-dashboard-page" class="space-y-8">
+
+    <!-- Filter Control Bar -->
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <form id="analytics-filter-form" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div>
+                <label class="block font-bold text-slate-500 uppercase mb-1">From Date</label>
+                <input type="date" name="date_from" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-500 uppercase mb-1">To Date</label>
+                <input type="date" name="date_to" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-500 uppercase mb-1">Classroom</label>
+                <select name="class_id" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                    <option value="">All Classes</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-500 uppercase mb-1">Subject</label>
+                <select name="subject_id" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl">
+                    <option value="">All Subjects</option>
+                    {% for s in subjects %}
+                    <option value="{{ s.id }}">{{ s.code }} - {{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Live KPI Summary Metric Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Students</span>
+            <div id="kpi-total-students" class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">-</div>
+            <div class="text-[11px] text-slate-500 mt-1">Face Coverage: <strong id="kpi-face-coverage" class="text-emerald-600">-</strong></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Average Attendance</span>
+            <div id="kpi-avg-attendance" class="text-2xl sm:text-3xl font-black text-blue-600 mt-1">-</div>
+            <div class="text-[11px] text-slate-500 mt-1">Institutional Average</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Today's Attendance</span>
+            <div id="kpi-today-present" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">-</div>
+            <div class="text-[11px] text-slate-500 mt-1">Sessions Today: <strong id="kpi-sessions-today" class="text-slate-700 dark:text-slate-300">-</strong></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Shortage Defaulters</span>
+            <div id="kpi-below-threshold" class="text-2xl sm:text-3xl font-black text-rose-600 mt-1">-</div>
+            <div class="text-[11px] text-slate-500 mt-1">Below Minimum Target</div>
+        </div>
+
+    </div>
+
+    <!-- Charts Grid Row 1 (Trend + Distribution) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Attendance Trend (2 Cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Attendance Trend Over Time</h3>
+                <span class="text-xs text-slate-400">Daily Average %</span>
+            </div>
+            <div class="flex-1 h-72">
+                <canvas id="trend-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Attendance Distribution (1 Col) -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Attendance Tier Distribution</h3>
+            <div class="flex-1 h-72 flex items-center justify-center">
+                <canvas id="distribution-chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Charts Grid Row 2 (Class Comparison + Subject Comparison) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Class Comparison -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Class-wise Attendance Comparison</h3>
+            <div class="h-64">
+                <canvas id="classwise-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Subject Comparison -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Subject-wise Attendance Comparison</h3>
+            <div class="h-64">
+                <canvas id="subjectwise-chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Charts Grid Row 3 (Day/Period Heatmap + Top Absentees) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Day / Period Heatmap (2 Cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Day of Week & Period Heatmap</h3>
+            <div id="heatmap-container" class="min-h-56"></div>
+        </div>
+
+        <!-- Top Absentees (1 Col) -->
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Top 10 Absentee Students</h3>
+            <div class="h-64">
+                <canvas id="top-absent-chart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

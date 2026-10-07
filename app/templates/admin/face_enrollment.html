@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Face Enrollment — {{ student.name }}{% endblock %}
+{% block page_title %}Biometric Face Enrollment{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Student Header Summary -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center text-xl">
+                {{ student.name[:2].upper() }}
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h2 class="text-lg font-black text-slate-900 dark:text-white">{{ student.name }}</h2>
+                    <span class="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300">
+                        {{ student.roll_no }}
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500">{{ student.classroom.name }} • {{ student.department }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="text-right">
+                <div class="text-xs text-slate-400 font-semibold uppercase">Enrolled Samples</div>
+                <div id="sample-count-badge" class="text-base font-black text-slate-800 dark:text-slate-100">
+                    <span id="current-samples-count">{{ samples_count }}</span> / 5 Recommended
+                </div>
+            </div>
+
+            {% if samples_count > 0 %}
+            <button type="button" onclick="confirmDeleteBiometrics()" class="px-3.5 py-2 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-xl transition">
+                Delete Face Data
+            </button>
+            <form id="delete-face-form" method="POST" action="{{ url_for('admin.delete_student_face', id=student.id) }}" class="hidden">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Biometric Consent Notice -->
+    <div class="bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-2xl p-4">
+        <label class="flex items-start space-x-3 cursor-pointer">
+            <input type="checkbox" id="biometric-consent-checkbox" {% if student.biometric_consent %}checked{% endif %}
+                   class="mt-0.5 h-4 w-4 rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-800 dark:border-slate-700">
+            <span class="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                <strong>Biometric Consent Notice:</strong> I understand and consent that facial image vectors will be captured and stored locally solely for automated institution attendance verification. Biometric data will never be shared with third parties and can be deleted at any time.
+            </span>
+        </label>
+    </div>
+
+    <!-- Enrollment Workspace Grid (Camera Viewport + Sample Gallery) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Live Webcam Capture Viewport (2 Cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center">
+            
+            <div class="w-full flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Live Enrollment Camera</span>
+                </div>
+                <div class="text-[11px] text-slate-400">Position face centered with good lighting</div>
+            </div>
+
+            <div class="camera-wrapper shadow-lg mb-4">
+                <video id="enroll-video" autoplay playsinline muted></video>
+                <canvas id="enroll-canvas"></canvas>
+            </div>
+
+            <!-- Validation Feedback Banner -->
+            <div id="enroll-feedback" class="w-full text-center text-xs py-2 px-3 rounded-xl mb-4 font-semibold hidden"></div>
+
+            <!-- Controls -->
+            <div class="w-full flex items-center justify-center space-x-4">
+                <button type="button" id="capture-sample-btn" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold shadow-lg shadow-blue-500/30 flex items-center transition">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Capture Sample
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Enrollment Guidelines & Sample Gallery (1 Col) -->
+        <div class="space-y-6">
+            
+            <!-- Quality Guidelines -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Validation Guidelines</h3>
+                <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-2.5">
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Exactly 1 face in the viewport
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Clear, non-blurry image (Laplacian > 45)
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Adequate front lighting
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Slight angle variations for samples
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Upload Alternative -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Upload Image Sample</h3>
+                <p class="text-xs text-slate-500 mb-4">Or choose a clear front portrait photo from disk.</p>
+                
+                <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/webp" class="hidden">
+                <button type="button" onclick="document.getElementById('image-file-input').click()" class="w-full py-2.5 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-2xl text-xs font-bold text-slate-600 dark:text-slate-300 transition flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Choose Image File
+                </button>
+            </div>
+
+            <div class="text-center">
+                <a href="{{ url_for('admin.students') }}" class="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+                    ← Return to Students List
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let stream = null;
+const video = document.getElementById('enroll-video');
+const canvas = document.getElementById('enroll-canvas');
+const captureBtn = document.getElementById('capture-sample-btn');
+const consentCheckbox = document.getElementById('biometric-consent-checkbox');
+const feedbackEl = document.getElementById('enroll-feedback');
+const sampleCountEl = document.getElementById('current-samples-count');
+
+async function initEnrollCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+        });
+        video.srcObject = stream;
+        await video.play();
+    } catch (err) {
+        console.error("Camera access failed:", err);
+        setFeedback("Camera access unavailable. Please use the image upload option.", "danger");
+    }
+}
+
+function setFeedback(msg, type = 'success') {
+    feedbackEl.textContent = msg;
+    feedbackEl.className = `w-full text-center text-xs py-2.5 px-3 rounded-xl mb-4 font-semibold block ${
+        type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200' : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200'
+    }`;
+}
+
+async function sendFrameForEnrollment(base64Data) {
+    if (!consentCheckbox.checked) {
+        showToast("Please check the biometric consent checkbox before enrolling face data.", "warning");
+        return;
+    }
+
+    try {
+        setFeedback("Validating face quality and extracting encodings...", "success");
+        const res = await fetch(`/admin/api/students/{{ student.id }}/enroll-frame`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Data, consent: consentCheckbox.checked })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            setFeedback(data.message, "success");
+            showToast(data.message, "success");
+            sampleCountEl.textContent = data.total_samples;
+        } else {
+            setFeedback(data.message || "Face validation failed.", "danger");
+            showToast(data.message || "Face rejected.", "error");
+        }
+    } catch (err) {
+        console.error("Enroll error:", err);
+        setFeedback("Network error enrolling sample.", "danger");
+    }
+}
+
+captureBtn.addEventListener('click', () => {
+    if (!video || video.readyState !== 4) {
+        showToast("Camera stream not ready yet.", "warning");
+        return;
+    }
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = video.videoWidth || 640;
+    tempCanvas.height = video.videoHeight || 480;
+    const ctx = tempCanvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const base64Data = tempCanvas.toDataURL('image/jpeg', 0.90);
+    sendFrameForEnrollment(base64Data);
+});
+
+// File upload handler
+document.getElementById('image-file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        sendFrameForEnrollment(event.target.result);
+    };
+    reader.readAsDataURL(file);
+});
+
+function confirmDeleteBiometrics() {
+    confirmDialog(
+        "Delete Face Data?",
+        "This will permanently delete all biometric encodings and stored face samples for this student. Are you sure?",
+        "Yes, Delete Biometrics",
+        () => {
+            document.getElementById('delete-face-form').submit();
+        }
+    );
+}
+
+document.addEventListener('DOMContentLoaded', initEnrollCamera);
+</script>
+{% endblock %}

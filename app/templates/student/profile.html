@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Student Profile & Biometrics{% endblock %}
+{% block page_title %}Academic Profile & Biometrics Privacy{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Academic Profile Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                {{ student.name[:2].upper() }}
+            </div>
+            <div class="text-center sm:text-left flex-1">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900 dark:text-white">{{ student.name }}</h2>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5">Roll No: {{ student.roll_no }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                        {{ student.classroom.name }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 text-sm">
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Department</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">{{ student.department }}</div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Academic Year & Section</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">Year {{ student.year }} • Section {{ student.section }}</div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Email Address</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">{{ student.email }}</div>
+            </div>
+
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Phone Contact</div>
+                <div class="font-bold text-slate-800 dark:text-slate-100">{{ student.phone or '-' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biometric Privacy & Right to Erasure Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+        <div class="flex items-center space-x-3">
+            <div class="p-3 bg-indigo-100 dark:bg-indigo-950 text-indigo-600 rounded-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Biometric Face Privacy</h3>
+                <p class="text-xs text-slate-500">Manage your facial recognition enrollment data and exercise GDPR privacy rights</p>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+            <div>
+                <div class="text-xs font-bold text-slate-700 dark:text-slate-300">Enrolled Face Samples</div>
+                <div class="text-xs text-slate-400 mt-0.5">
+                    {% if student.face_enrolled %}
+                    <span class="text-emerald-600 font-bold">{{ samples_count }} face vector samples enrolled</span>
+                    {% else %}
+                    <span class="text-amber-500 font-bold">No biometric face data enrolled</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if student.face_enrolled %}
+            <form id="student-delete-face-form" method="POST" action="{{ url_for('student.delete_my_face') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="button" onclick="confirmStudentDeleteFace()" class="px-4 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition">
+                    Delete My Face Data
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+            Note: Deleting your face data permanently erases all mathematical facial representations from the database. Attendance can still be taken via manual roll calls by your teachers.
+        </p>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmStudentDeleteFace() {
+    confirmDialog(
+        "Permanently Delete Biometric Data?",
+        "Are you sure you want to delete your stored face data? You will no longer be automatically detected during live camera roll calls until re-enrolled.",
+        "Yes, Delete Biometrics",
+        () => {
+            document.getElementById('student-delete-face-form').submit();
+        }
+    );
+}
+</script>
+{% endblock %}

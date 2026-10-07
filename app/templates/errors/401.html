@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error 401 — Unauthorized{% endblock %}
+{% block page_title %}Login Required{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <div class="text-7xl font-black text-amber-500 font-mono mb-2">401</div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Authentication Required</h2>
+    <p class="text-xs text-slate-500 mb-6">Please sign in to your authorized account to access this page.</p>
+    <a href="{{ url_for('auth.login') }}" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition inline-block">
+        Sign In
+    </a>
+</div>
+{% endblock %}

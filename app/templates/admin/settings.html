@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+{% block page_title %}Application Configuration{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+        
+        <div class="flex items-center space-x-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">System Settings</h2>
+                <p class="text-xs text-slate-500">Configure attendance thresholds, face recognition tolerances, and timeouts</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
+
+            <div class="space-y-4">
+                <div>
+                    <label for="{{ form.attendance_threshold.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                        Minimum Attendance Threshold (%)
+                    </label>
+                    <p class="text-[11px] text-slate-400 mb-2">Students below this percentage will be flagged on the Shortage List.</p>
+                    <input type="number" step="0.5" min="1" max="100" name="{{ form.attendance_threshold.name }}" id="{{ form.attendance_threshold.id }}" required
+                           value="{{ form.attendance_threshold.data }}"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm">
+                </div>
+
+                <div>
+                    <label for="{{ form.face_distance_threshold.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                        Face Recognition Distance Threshold (Default: 0.50)
+                    </label>
+                    <p class="text-[11px] text-slate-400 mb-2">Lower values are stricter; higher values allow looser matches.</p>
+                    <input type="number" step="0.05" min="0.1" max="1.0" name="{{ form.face_distance_threshold.name }}" id="{{ form.face_distance_threshold.id }}" required
+                           value="{{ form.face_distance_threshold.data }}"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="{{ form.late_threshold_minutes.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                            Late Grace Period (Mins)
+                        </label>
+                        <input type="number" min="1" max="60" name="{{ form.late_threshold_minutes.name }}" id="{{ form.late_threshold_minutes.id }}" required
+                               value="{{ form.late_threshold_minutes.data }}"
+                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm">
+                    </div>
+
+                    <div>
+                        <label for="{{ form.min_session_length.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                            Min Session Length (Mins)
+                        </label>
+                        <input type="number" min="5" max="180" name="{{ form.min_session_length.name }}" id="{{ form.min_session_length.id }}" required
+                               value="{{ form.min_session_length.data }}"
+                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm">
+                    </div>
+
+                    <div>
+                        <label for="{{ form.session_timeout_minutes.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                            Auto-Expiration (Mins)
+                        </label>
+                        <input type="number" min="10" max="300" name="{{ form.session_timeout_minutes.name }}" id="{{ form.session_timeout_minutes.id }}" required
+                               value="{{ form.session_timeout_minutes.data }}"
+                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 flex items-center justify-end">
+                <button type="submit" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/25 transition">
+                    Save System Settings
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

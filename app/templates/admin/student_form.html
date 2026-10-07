@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 dark:border-slate-800">
+        
+        <div class="flex items-center space-x-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div class="p-3 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">{{ title }}</h2>
+                <p class="text-xs text-slate-500">Provide academic and contact details for student registration</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {{ form.hidden_tag() }}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="{{ form.roll_no.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Roll Number <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="{{ form.roll_no.name }}" id="{{ form.roll_no.id }}" required
+                           value="{{ form.roll_no.data or '' }}"
+                           placeholder="e.g. CS2026001"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    {% for error in form.roll_no.errors %}
+                    <p class="mt-1 text-xs text-rose-500 font-semibold">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <label for="{{ form.name.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Full Name <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="{{ form.name.name }}" id="{{ form.name.id }}" required
+                           value="{{ form.name.data or '' }}"
+                           placeholder="e.g. Alex Rivera"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    {% for error in form.name.errors %}
+                    <p class="mt-1 text-xs text-rose-500 font-semibold">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <label for="{{ form.email.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Email Address <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="email" name="{{ form.email.name }}" id="{{ form.email.id }}" required
+                           value="{{ form.email.data or '' }}"
+                           placeholder="alex@institution.edu"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    {% for error in form.email.errors %}
+                    <p class="mt-1 text-xs text-rose-500 font-semibold">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <label for="{{ form.phone.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Phone Number
+                    </label>
+                    <input type="text" name="{{ form.phone.name }}" id="{{ form.phone.id }}"
+                           value="{{ form.phone.data or '' }}"
+                           placeholder="e.g. +1 555-0199"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+
+                <div>
+                    <label for="{{ form.department.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Department <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="{{ form.department.name }}" id="{{ form.department.id }}" required
+                           value="{{ form.department.data or '' }}"
+                           placeholder="e.g. Computer Science & Engineering"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+
+                <div>
+                    <label for="{{ form.class_id.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Assigned Class <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="{{ form.class_id.name }}" id="{{ form.class_id.id }}" required
+                            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        {% for val, label in form.class_id.choices %}
+                        <option value="{{ val }}" {% if form.class_id.data == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="{{ form.year.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Year of Study <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" name="{{ form.year.name }}" id="{{ form.year.id }}" min="1" max="6" required
+                           value="{{ form.year.data or 1 }}"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+
+                <div>
+                    <label for="{{ form.section.id }}" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                        Section <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="{{ form.section.name }}" id="{{ form.section.id }}" required
+                           value="{{ form.section.data or 'A' }}"
+                           placeholder="e.g. A"
+                           class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                <div class="flex items-center">
+                    <input id="{{ form.is_active.id }}" name="{{ form.is_active.name }}" type="checkbox"
+                           {% if form.is_active.data %}checked{% endif %}
+                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800">
+                    <label for="{{ form.is_active.id }}" class="ml-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Active Student Status
+                    </label>
+                </div>
+
+                {% if form.create_login %}
+                <div class="flex items-center">
+                    <input id="{{ form.create_login.id }}" name="{{ form.create_login.name }}" type="checkbox"
+                           {% if form.create_login.data %}checked{% endif %}
+                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800">
+                    <label for="{{ form.create_login.id }}" class="ml-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Generate Student Portal Login (Default Password: Student@123)
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="pt-4 flex items-center justify-end space-x-3">
+                <a href="{{ url_for('admin.students') }}" class="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg shadow-blue-500/25 transition">
+                    Save Student
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

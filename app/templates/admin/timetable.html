@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Timetable Management{% endblock %}
+{% block page_title %}Academic Schedule{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Add Timetable Slot (1 Col) -->
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm h-fit">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Add Schedule Slot</h3>
+        <form method="POST" action="{{ url_for('admin.timetable') }}" class="space-y-4">
+            {{ form.hidden_tag() }}
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Classroom</label>
+                <select name="{{ form.class_id.name }}" required
+                        class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    {% for val, label in form.class_id.choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+                <select name="{{ form.subject_id.name }}" required
+                        class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    {% for val, label in form.subject_id.choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Teacher</label>
+                <select name="{{ form.teacher_id.name }}" required
+                        class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    {% for val, label in form.teacher_id.choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Weekday</label>
+                    <select name="{{ form.weekday.name }}" required
+                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                        {% for val, label in form.weekday.choices %}
+                        <option value="{{ val }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Period</label>
+                    <input type="number" name="{{ form.period.name }}" min="1" max="12" value="1" required
+                           class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Start Time</label>
+                    <input type="time" name="{{ form.start_time.name }}" value="09:00" required
+                           class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">End Time</label>
+                    <input type="time" name="{{ form.end_time.name }}" value="10:00" required
+                           class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Room / Hall</label>
+                <input type="text" name="{{ form.room.name }}" placeholder="e.g. Room 301"
+                       class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition">
+                Save Timetable Slot
+            </button>
+        </form>
+    </div>
+
+    <!-- Timetable Slots Table (2 Cols) -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Timetable Schedule</h3>
+            <span class="text-xs font-bold text-slate-400">{{ entries|length }} Slots</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Day / Period</th>
+                        <th class="py-3 px-4">Class</th>
+                        <th class="py-3 px-4">Subject & Faculty</th>
+                        <th class="py-3 px-4">Time & Room</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% set days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+                    {% for item in entries %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white text-xs">
+                            <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-bold mr-1">{{ days[item.weekday] }}</span>
+                            Period {{ item.period }}
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200 text-xs">
+                            {{ item.classroom.name }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs">
+                            <div class="font-bold text-blue-600 dark:text-blue-400">{{ item.subject.code }}</div>
+                            <div class="text-slate-400">{{ item.teacher.name }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs font-mono text-slate-600 dark:text-slate-300">
+                            <div>{{ item.start_time.strftime('%H:%M') }} - {{ item.end_time.strftime('%H:%M') }}</div>
+                            <div class="text-slate-400 font-sans">{{ item.room or 'TBD' }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <form method="POST" action="{{ url_for('admin.delete_timetable', id=item.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-2.5 py-1 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400 text-sm">No timetable slots configured.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

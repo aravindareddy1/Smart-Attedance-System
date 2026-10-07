@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Database Backups{% endblock %}
+{% block page_title %}Database Hot Backups{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+
+    <!-- Backup Generator Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Database Backup Center</h2>
+            <p class="text-xs text-slate-500">Create instant, transactionally consistent hot-backups stored securely in data/backups/.</p>
+        </div>
+        <form method="POST" action="{{ url_for('admin.backups') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/25 transition flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                Create Backup Now
+            </button>
+        </form>
+    </div>
+
+    <!-- Backup Archives List -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Stored Backup Archives</h3>
+            <span class="text-xs font-bold text-slate-400">{{ backups|length }} Archive Files</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Backup Filename</th>
+                        <th class="py-3 px-4">Created Timestamp</th>
+                        <th class="py-3 px-4 text-right">File Size</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for b in backups %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 text-xs">
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                            {{ b.filename }}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-500">
+                            {{ b.created_at }} UTC
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono font-semibold text-slate-700 dark:text-slate-300">
+                            {{ b.size_mb }} MB
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="py-8 text-center text-slate-400 text-sm">No backup archives found. Click "Create Backup Now" to create one.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Subjects Management{% endblock %}
+{% block page_title %}Subjects & Curriculum{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Add Subject Form (1 Col) -->
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm h-fit">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Add New Subject</h3>
+        <form method="POST" action="{{ url_for('admin.subjects') }}" class="space-y-4">
+            {{ form.hidden_tag() }}
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Subject Name</label>
+                <input type="text" name="{{ form.name.name }}" required placeholder="e.g. Operating Systems"
+                       class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Subject Code</label>
+                <input type="text" name="{{ form.code.name }}" required placeholder="e.g. CS304"
+                       class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Classroom</label>
+                <select name="{{ form.class_id.name }}" required
+                        class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    {% for val, label in form.class_id.choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">Assigned Teacher</label>
+                <select name="{{ form.teacher_id.name }}" required
+                        class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs">
+                    {% for val, label in form.teacher_id.choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-500/25 transition">
+                Create Subject
+            </button>
+        </form>
+    </div>
+
+    <!-- Subjects List (2 Cols) -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Active Subjects</h3>
+            <span class="text-xs font-bold text-slate-400">{{ subjects|length }} Subjects</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="py-3 px-4">Code</th>
+                        <th class="py-3 px-4">Subject Name</th>
+                        <th class="py-3 px-4">Class</th>
+                        <th class="py-3 px-4">Faculty</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for s in subjects %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                        <td class="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white text-xs">
+                            {{ s.code }}
+                        </td>
+                        <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-100">
+                            {{ s.name }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                            {{ s.classroom.name if s.classroom else '-' }}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">
+                            {{ s.teacher.name if s.teacher else 'Unassigned' }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{{ url_for('admin.edit_subject', id=s.id) }}" class="px-2.5 py-1 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error 500 — Server Error{% endblock %}
+{% block page_title %}Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <div class="text-7xl font-black text-rose-600 dark:text-rose-400 font-mono mb-2">500</div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Internal Server Error</h2>
+    <p class="text-xs text-slate-500 mb-6">An unexpected error occurred while processing your request. The technical details have been logged for inspection.</p>
+    <a href="{{ url_for('auth.dashboard') }}" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition inline-block">
+        ← Return to Dashboard
+    </a>
+</div>
+{% endblock %}
