@@ -1,0 +1,10 @@
+title: Smart Attendance System
+description: AI-Powered Biometric Attendance Management System with OpenCV & WebRTC
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - favicon.ico
