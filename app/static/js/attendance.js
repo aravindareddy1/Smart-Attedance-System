@@ -1,356 +1,535 @@
 /**
- * Smart Attendance System - Live Webcam Recognition Client
+ * Smart Attendance System - Live Attendance & WebRTC Recognition Pipeline
+ * Integrates: CameraService, Frame Capture, Canvas Face Bounding Boxes,
+ * Real-time FPS, Session Countdown Timer, and Dual-List Roster Sync.
  */
 
+if (typeof window.CameraService === 'undefined') {
+    class CameraService {
+        static checkSecureContext() {
+            const isLocalhost = Boolean(
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname === '[::1]'
+            );
+            const isHttps = window.location.protocol === 'https:';
+            const isSecure = window.isSecureContext || isHttps || isLocalhost;
+
+            return {
+                isSecure: isSecure,
+                isLocalhost: isLocalhost,
+                protocol: window.location.protocol,
+                hostname: window.location.hostname,
+                port: window.location.port || '5000',
+                hasMediaDevices: Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+            };
+        }
+
+        static mapCameraError(err) {
+            const secInfo = CameraService.checkSecureContext();
+
+            if (!secInfo.hasMediaDevices) {
+                if (!secInfo.isSecure) {
+                    const localUrl = `http://localhost:${secInfo.port}${window.location.pathname}${window.location.search}`;
+                    return {
+                        type: 'INSECURE_CONTEXT',
+                        title: 'Camera Insecure Context Blocked',
+                        message: `Browsers block camera access over insecure HTTP (${window.location.hostname}).`,
+                        actionable: `Please access this page via localhost (${localUrl}) or launch with HTTPS.`,
+                        isLocalUrl: localUrl
+                    };
+                }
+                return {
+                    type: 'NO_MEDIA_DEVICES',
+                    title: 'Camera API Not Supported',
+                    message: 'Your browser does not support navigator.mediaDevices.getUserMedia.',
+                    actionable: 'Please use a modern Chromium, Firefox, or Safari browser.'
+                };
+            }
+
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                return {
+                    type: 'PERMISSION_DENIED',
+                    title: 'Camera Permission Denied',
+                    message: 'Camera permission was denied.',
+                    actionable: 'Click the camera/lock icon in your address bar and set Camera permissions to "Allow".'
+                };
+            }
+
+            if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                return {
+                    type: 'NO_HARDWARE',
+                    title: 'No Camera Detected',
+                    message: 'No video capture hardware was found on this system.',
+                    actionable: 'Ensure your webcam is connected and recognized.'
+                };
+            }
+
+            if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                return {
+                    type: 'HARDWARE_LOCKED',
+                    title: 'Camera Busy / In Use',
+                    message: 'The camera is currently in use by another program (Zoom, Teams, or another tab).',
+                    actionable: 'Close other applications using the webcam and refresh.'
+                };
+            }
+
+            return {
+                type: 'UNKNOWN',
+                title: 'Camera Error',
+                message: err.message || 'An unknown error occurred while initializing the camera.',
+                actionable: 'Check browser permissions and console logs for details.'
+            };
+        }
+
+        static async startCamera(videoElement, callbacks = {}, options = {}) {
+            const {
+                onStateChange = () => {},
+                onReady = () => {},
+                onError = () => {}
+            } = callbacks;
+
+            if (!videoElement) {
+                const err = {
+                    type: 'NO_ELEMENT',
+                    title: 'Video Element Missing',
+                    message: 'Target video element was not found in the DOM.',
+                    actionable: 'Verify DOM element IDs.'
+                };
+                onError(err);
+                return null;
+            }
+
+            console.log('[CAMERA] Requesting camera');
+            onStateChange('INITIALIZING', 'Requesting camera access...');
+
+            const secInfo = CameraService.checkSecureContext();
+            if (!secInfo.hasMediaDevices) {
+                const errDetails = CameraService.mapCameraError(new Error('MediaDevices unavailable'));
+                console.error('[CAMERA] Error:', errDetails.title);
+                onStateChange('ERROR', errDetails.title);
+                onError(errDetails);
+                return null;
+            }
+
+            const constraints = {
+                video: {
+                    width: { ideal: options.width || 640 },
+                    height: { ideal: options.height || 480 },
+                    facingMode: options.facingMode || 'user'
+                },
+                audio: false
+            };
+
+            try {
+                CameraService.stopCamera(videoElement);
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('[CAMERA] Permission granted');
+                videoElement.srcObject = stream;
+
+                onStateChange('CONNECTING', 'Attaching video stream...');
+
+                await new Promise((resolve) => {
+                    if (videoElement.readyState >= 2) {
+                        resolve();
+                    } else {
+                        videoElement.onloadedmetadata = () => {
+                            console.log('[CAMERA] Video metadata loaded');
+                            resolve();
+                        };
+                    }
+                });
+
+                await videoElement.play();
+
+                const videoWidth = videoElement.videoWidth || 640;
+                const videoHeight = videoElement.videoHeight || 480;
+                console.log(`[CAMERA] Resolution: ${videoWidth} x ${videoHeight}`);
+
+                onStateChange('READY', 'Camera Active • Scanning Faces');
+                onReady({ stream, videoWidth, videoHeight });
+                return stream;
+            } catch (err) {
+                console.error('[CAMERA] Failed to initialize camera:', err);
+                const errDetails = CameraService.mapCameraError(err);
+                onStateChange('ERROR', errDetails.title);
+                onError(errDetails);
+                return null;
+            }
+        }
+
+        static stopCamera(videoElement) {
+            if (!videoElement) return;
+            if (videoElement.srcObject) {
+                const stream = videoElement.srcObject;
+                if (stream.getTracks) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                videoElement.srcObject = null;
+                console.log('[CAMERA] Camera tracks stopped');
+            }
+        }
+
+        static captureFrame(videoElement, quality = 0.85) {
+            if (!videoElement || !videoElement.videoWidth || videoElement.videoWidth === 0) {
+                return null;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            return {
+                dataUrl,
+                width: canvas.width,
+                height: canvas.height
+            };
+        }
+    }
+
+    window.CameraService = CameraService;
+}
+
+/**
+ * LiveAttendanceManager
+ */
 class LiveAttendanceManager {
-    constructor(config) {
-        this.sessionId = config.sessionId;
-        this.apiEndpoint = config.apiEndpoint || `/attendance/api/frame/${this.sessionId}`;
-        this.video = document.getElementById(config.videoId || 'webcam-video');
-        this.canvas = document.getElementById(config.canvasId || 'webcam-canvas');
+    constructor(config = {}) {
+        this.config = config;
+        this.sessionId = config.sessionId || this.extractSessionId();
+        this.markedIds = new Set(config.initialMarkedIds || []);
+
+        // Element bindings matching live_session.html
+        this.video = document.getElementById('webcam-video')
+            || document.getElementById('live-video')
+            || document.querySelector('video');
+
+        this.canvas = document.getElementById('webcam-canvas');
+
         this.statusIndicator = document.getElementById('camera-status-indicator');
         this.fpsIndicator = document.getElementById('fps-indicator');
-        this.presentList = document.getElementById('present-students-list');
-        this.remainingList = document.getElementById('remaining-students-list');
+        this.unknownCountEl = document.getElementById('unknown-count');
         this.presentCountEl = document.getElementById('present-count');
         this.remainingCountEl = document.getElementById('remaining-count');
-        this.unknownCountEl = document.getElementById('unknown-count');
+        this.presentList = document.getElementById('present-students-list');
         this.timerEl = document.getElementById('session-timer');
 
-        this.stream = null;
-        this.isRunning = false;
         this.isProcessing = false;
-        this.throttleInterval = 700; // ms
-        this.lastFrameTime = 0;
+        this.isRunning = false;
         this.frameCount = 0;
-        this.lastFpsCalc = Date.now();
-        this.markedStudentIds = new Set(config.initialMarkedIds || []);
+        this.lastFpsTime = performance.now();
+        this.loopInterval = null;
+        this.timerInterval = null;
+        this.csrfToken = this.extractCsrfToken();
 
-        // Hidden canvas for extracting JPEG frames
-        this.captureCanvas = document.createElement('canvas');
-        this.captureCtx = this.captureCanvas.getContext('2d');
+        console.log(`[RECOGNITION] Manager initialized for session #${this.sessionId} with ${this.markedIds.size} initial attendees.`);
+    }
+
+    static init(config) {
+        const instance = new LiveAttendanceManager(config);
+        instance.start();
+        return instance;
+    }
+
+    extractSessionId() {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const id = parts[parts.length - 1];
+        return parseInt(id, 10) || null;
+    }
+
+    extractCsrfToken() {
+        const input = document.querySelector('input[name="csrf_token"]');
+        if (input) return input.value;
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) return meta.getAttribute('content');
+        return '';
+    }
+
+    updateStatusUI(state, text) {
+        if (!this.statusIndicator) return;
+        const dot = this.statusIndicator.querySelector('span:first-child');
+        const label = this.statusIndicator.querySelector('span:last-child');
+
+        if (label) label.textContent = text;
+        if (dot) {
+            if (state === 'READY') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse mr-2';
+            } else if (state === 'ERROR') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 mr-2';
+            } else {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mr-2';
+            }
+        }
+    }
+
+    startSessionTimer() {
+        if (!this.timerEl) return;
+        const startedAtStr = this.timerEl.dataset.startedAt;
+        const durationMinutes = parseInt(this.timerEl.dataset.duration || '60', 10);
+        if (!startedAtStr) return;
+
+        const startedAt = new Date(startedAtStr).getTime();
+        const endTime = startedAt + (durationMinutes * 60 * 1000);
+
+        this.timerInterval = setInterval(() => {
+            const now = Date.now();
+            const diff = endTime - now;
+            if (diff <= 0) {
+                this.timerEl.textContent = '00:00 (Expired)';
+                this.timerEl.classList.add('text-rose-600');
+                clearInterval(this.timerInterval);
+                return;
+            }
+
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            this.timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }, 1000);
     }
 
     async start() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            this.showCameraError("Your browser does not support webcam access. Please use Chrome, Edge, or Firefox, or switch to Manual Attendance.");
+        if (this.isRunning) return;
+
+        if (!this.video) {
+            console.error('[CAMERA] Video element #webcam-video not found in DOM.');
+            this.updateStatusUI('ERROR', 'Webcam element missing');
             return;
         }
 
-        try {
-            this.updateStatus("Connecting to camera...", "amber");
-            this.stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    width: { ideal: 640 },
-                    height: { ideal: 480 },
-                    facingMode: 'user'
-                },
-                audio: false
-            });
+        this.startSessionTimer();
 
-            this.video.srcObject = this.stream;
-            await this.video.play();
-
-            this.captureCanvas.width = this.video.videoWidth || 640;
-            this.captureCanvas.height = this.video.videoHeight || 480;
-            this.canvas.width = this.video.clientWidth || 640;
-            this.canvas.height = this.video.clientHeight || 480;
-
-            this.isRunning = true;
-            this.updateStatus("Live - Detecting Faces", "emerald");
-            this.startLoop();
-            this.startTimer();
-
-            showToast("Webcam connected. Position faces in the frame.", "success");
-        } catch (err) {
-            console.error("Camera access error:", err);
-            let msg = "Could not access camera.";
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                msg = "Camera permission was denied. Please allow camera access in your browser settings, or continue with Manual Attendance.";
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                msg = "No webcam device detected on your system. Please connect a camera or use Manual Attendance.";
-            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                msg = "Webcam is already in use by another application. Please close other camera tabs/apps and reload.";
+        await window.CameraService.startCamera(this.video, {
+            onStateChange: (state, text) => this.updateStatusUI(state, text),
+            onReady: (details) => {
+                this.updateStatusUI('READY', 'Camera Active • Scanning Faces');
+                this.startRecognitionLoop();
+            },
+            onError: (errDetails) => {
+                this.updateStatusUI('ERROR', errDetails.title);
             }
-            this.showCameraError(msg);
-        }
+        }, { width: 640, height: 480 });
     }
 
-    startLoop() {
-        const loop = async (timestamp) => {
-            if (!this.isRunning) return;
+    startRecognitionLoop() {
+        this.isRunning = true;
+        this.frameCount = 0;
+        this.lastFpsTime = performance.now();
+        console.log('[RECOGNITION] Recognition loop started');
 
-            // Draw current face bounding boxes
-            // Check throttle interval for backend recognition
-            const now = Date.now();
-            if (now - this.lastFrameTime >= this.throttleInterval && !this.isProcessing) {
-                this.lastFrameTime = now;
-                await this.captureAndSendFrame();
-            }
+        if (this.loopInterval) clearInterval(this.loopInterval);
 
-            // Calculate FPS
-            this.frameCount++;
-            if (now - this.lastFpsCalc >= 1000) {
-                const fps = Math.round((this.frameCount * 1000) / (now - this.lastFpsCalc));
-                if (this.fpsIndicator) this.fpsIndicator.textContent = `${fps} FPS`;
-                this.frameCount = 0;
-                this.lastFpsCalc = now;
-            }
-
-            requestAnimationFrame(loop);
-        };
-
-        requestAnimationFrame(loop);
+        this.loopInterval = setInterval(() => {
+            this.processFrame();
+        }, 650);
     }
 
-    async captureAndSendFrame() {
-        if (!this.video || this.video.readyState !== 4) return;
+    async processFrame() {
+        if (!this.isRunning || this.isProcessing) return;
+        if (!this.video || this.video.readyState < 2) return;
 
         this.isProcessing = true;
+
         try {
-            const vw = this.video.videoWidth;
-            const vh = this.video.videoHeight;
-            if (this.captureCanvas.width !== vw || this.captureCanvas.height !== vh) {
-                this.captureCanvas.width = vw;
-                this.captureCanvas.height = vh;
-            }
-
-            this.captureCtx.drawImage(this.video, 0, 0, vw, vh);
-            const base64Data = this.captureCanvas.toDataURL('image/jpeg', 0.85);
-
-            const res = await fetch(this.apiEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ frame: base64Data })
-            });
-
-            if (!res.ok) {
-                console.warn(`Server frame response: ${res.status}`);
+            const frame = window.CameraService.captureFrame(this.video, 0.85);
+            if (!frame || !frame.dataUrl) {
                 this.isProcessing = false;
                 return;
             }
 
-            const data = await res.json();
-            this.handleFrameResponse(data);
+            this.frameCount++;
+            const now = performance.now();
+            const elapsed = (now - this.lastFpsTime) / 1000;
+            if (elapsed >= 1.0) {
+                const fps = Math.round((this.frameCount / elapsed) * 10) / 10;
+                if (this.fpsIndicator) {
+                    this.fpsIndicator.textContent = `${fps} FPS`;
+                }
+                this.frameCount = 0;
+                this.lastFpsTime = now;
+            }
+
+            console.log(`[RECOGNITION] Processing frame (session #${this.sessionId})`);
+
+            const response = await fetch(`/attendance/api/frame/${this.sessionId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.csrfToken
+                },
+                body: JSON.stringify({ frame: frame.dataUrl })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.handleRecognitionResults(data);
+            } else if (response.status === 401 || response.status === 403) {
+                console.warn('[RECOGNITION] Session unauthorized');
+                this.updateStatusUI('ERROR', 'Session unauthorized');
+            }
         } catch (err) {
-            console.error("Frame processing network error:", err);
+            console.warn('[RECOGNITION] Frame processing error:', err);
         } finally {
             this.isProcessing = false;
         }
     }
 
-    handleFrameResponse(data) {
-        if (!data.success) {
-            if (data.session_status === 'ended') {
-                this.stop();
-                showToast(data.message || "Session has ended.", "info");
-                setTimeout(() => window.location.reload(), 1500);
+    handleRecognitionResults(data) {
+        if (!data || !data.success) {
+            if (data && data.message) {
+                console.warn(`[RECOGNITION] Backend message: ${data.message}`);
             }
             return;
         }
 
-        // Draw bounding boxes on the overlay canvas
-        this.renderCanvasOverlay(data.faces || []);
+        const faces = data.faces || [];
+        const newlyMarked = data.marked || [];
+        const unknownCount = data.unknown_count !== undefined ? data.unknown_count : 0;
 
-        // Process newly marked students
-        if (data.marked && data.marked.length > 0) {
-            for (const item of data.marked) {
-                if (!this.markedStudentIds.has(item.student_id)) {
-                    this.markedStudentIds.add(item.student_id);
-                    this.addPresentStudent(item);
-                    this.removeRemainingStudent(item.student_id);
-                    showToast(`Marked ${item.status}: ${item.name} (${item.roll_no})`, "success", 3000);
-                }
-            }
+        console.log(`[RECOGNITION] Faces detected: ${faces.length}, Unknown: ${unknownCount}`);
+
+        if (this.unknownCountEl) {
+            this.unknownCountEl.textContent = unknownCount;
         }
 
-        // Update unknown count
-        if (this.unknownCountEl) {
-            this.unknownCountEl.textContent = data.unknown_count || 0;
+        this.drawBoundingBoxes(faces);
+
+        if (newlyMarked && newlyMarked.length > 0) {
+            newlyMarked.forEach(student => {
+                if (!this.markedIds.has(student.student_id)) {
+                    console.log(`[ATTENDANCE] Marking student: ${student.name} (${student.roll_no}) [${student.status}]`);
+                    this.markedIds.add(student.student_id);
+                    this.markStudentInUI(student);
+                    console.log('[ATTENDANCE] Success');
+                }
+            });
+        }
+
+        const matchedNames = faces.filter(f => f.matched && f.name).map(f => f.name);
+        if (matchedNames.length > 0) {
+            this.updateStatusUI('READY', `Scanning • Match: ${matchedNames.join(', ')}`);
+        } else if (faces.length > 0) {
+            this.updateStatusUI('READY', `Scanning • ${faces.length} Face(s) Detected`);
+        } else {
+            this.updateStatusUI('READY', 'Camera Active • Scanning Faces');
         }
     }
 
-    renderCanvasOverlay(faces) {
-        if (!this.canvas) return;
+    drawBoundingBoxes(faces) {
+        if (!this.canvas || !this.video) return;
+
+        const vw = this.video.videoWidth;
+        const vh = this.video.videoHeight;
+        if (!vw || !vh) return;
+
+        if (this.canvas.width !== vw || this.canvas.height !== vh) {
+            this.canvas.width = vw;
+            this.canvas.height = vh;
+        }
+
         const ctx = this.canvas.getContext('2d');
-        const cw = this.canvas.width;
-        const ch = this.canvas.height;
-        ctx.clearRect(0, 0, cw, ch);
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const vw = this.video.videoWidth || 640;
-        const vh = this.video.videoHeight || 480;
-        const scaleX = cw / vw;
-        const scaleY = ch / vh;
-
-        for (const face of faces) {
-            const [x, y, w, h] = face.box;
-            const sx = x * scaleX;
-            const sy = y * scaleY;
-            const sw = w * scaleX;
-            const sh = h * scaleY;
+        faces.forEach(face => {
+            const [x, y, w, h] = face.box || [0, 0, 0, 0];
+            const isMatched = Boolean(face.matched);
 
             ctx.lineWidth = 3;
-            if (face.matched) {
-                ctx.strokeStyle = '#10B981'; // Emerald
-                ctx.fillStyle = '#10B981';
-            } else {
-                ctx.strokeStyle = '#F59E0B'; // Amber
-                ctx.fillStyle = '#F59E0B';
-            }
+            ctx.strokeStyle = isMatched ? '#10b981' : '#f59e0b';
+            ctx.strokeRect(x, y, w, h);
 
-            // Draw bounding box rounded corner rectangle
-            this.drawRoundedRect(ctx, sx, sy, sw, sh, 8);
-            ctx.stroke();
+            const label = isMatched ? `${face.name} (${Math.round((face.confidence || 0) * 100)}%)` : 'Unknown';
+            ctx.font = 'bold 13px sans-serif';
+            const textWidth = ctx.measureText(label).width;
 
-            // Label background
-            const label = face.matched ? `${face.name} (${Math.round(face.confidence * 100)}%)` : 'Unknown Face';
-            ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-            const textMetrics = ctx.measureText(label);
-            const labelWidth = textMetrics.width + 16;
-            const labelHeight = 24;
+            ctx.fillStyle = isMatched ? 'rgba(16, 185, 129, 0.9)' : 'rgba(245, 158, 11, 0.9)';
+            ctx.fillRect(x, y > 24 ? y - 24 : y, textWidth + 12, 22);
 
-            ctx.beginPath();
-            ctx.roundRect(sx, sy - labelHeight - 4, labelWidth, labelHeight, 6);
-            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(label, x + 6, y > 24 ? y - 8 : y + 16);
+        });
+    }
 
-            // Label text
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(label, sx + 8, sy - 8);
+    markStudentInUI(student) {
+        const studentId = student.student_id;
+
+        const unmarkedRow = document.getElementById(`unmarked-row-${studentId}`)
+            || document.getElementById(`student-unmarked-${studentId}`);
+        if (unmarkedRow) {
+            unmarkedRow.remove();
         }
-    }
 
-    drawRoundedRect(ctx, x, y, width, height, radius) {
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + width - radius, y);
-        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-        ctx.lineTo(x + width, y + height - radius);
-        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        ctx.lineTo(x + radius, y + height);
-        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-    }
+        if (this.presentList) {
+            const placeholder = this.presentList.querySelector('.empty-placeholder');
+            if (placeholder) placeholder.remove();
 
-    addPresentStudent(item) {
-        if (!this.presentList) return;
+            const existingRow = document.getElementById(`present-row-${studentId}`);
+            if (!existingRow) {
+                const item = document.createElement('div');
+                item.id = `present-row-${studentId}`;
+                item.className = 'p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between animate-fade-in mb-2';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+                            ${(student.name || 'S').slice(0, 1)}
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800 dark:text-slate-100">${student.name}</div>
+                            <div class="text-xs text-slate-500 font-mono">${student.roll_no || 'Enrolled'}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-md bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                            ${student.status || 'Present'}
+                        </span>
+                        <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                            ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </div>
+                    </div>
+                `;
+                this.presentList.prepend(item);
+            }
+        }
 
-        // Remove empty placeholder if any
-        const emptyState = document.getElementById('present-empty-state');
-        if (emptyState) emptyState.remove();
-
-        const row = document.createElement('div');
-        row.id = `present-row-${item.student_id}`;
-        row.className = 'p-3 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between animate-fadeIn';
-        row.innerHTML = `
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
-                    ${item.name.charAt(0)}
-                </div>
-                <div>
-                    <div class="text-sm font-bold text-slate-800 dark:text-slate-100">${escapeHtml(item.name)}</div>
-                    <div class="text-xs text-slate-500 font-mono">${escapeHtml(item.roll_no)}</div>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${item.status === 'Late' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
-                    ${item.status}
-                </span>
-                <div class="text-[10px] text-slate-400 mt-0.5">${item.time || 'Just now'}</div>
-            </div>
-        `;
-
-        this.presentList.prepend(row);
-        this.updateCounts();
-    }
-
-    removeRemainingStudent(studentId) {
-        const row = document.getElementById(`remaining-row-${studentId}`);
-        if (row) row.remove();
-        this.updateCounts();
-    }
-
-    updateCounts() {
         if (this.presentCountEl) {
-            this.presentCountEl.textContent = this.markedStudentIds.size;
+            this.presentCountEl.textContent = this.markedIds.size;
         }
-        if (this.remainingCountEl && this.remainingList) {
-            const count = this.remainingList.children.length;
-            this.remainingCountEl.textContent = count;
+        if (this.remainingCountEl) {
+            const currentUnmarked = parseInt(this.remainingCountEl.textContent, 10) || 0;
+            this.remainingCountEl.textContent = Math.max(0, currentUnmarked - 1);
         }
-    }
 
-    startTimer() {
-        if (!this.timerEl) return;
-        const startTimeStr = this.timerEl.dataset.startedAt;
-        const durationMinutes = parseInt(this.timerEl.dataset.duration || '60', 10);
-        const startTime = startTimeStr ? new Date(startTimeStr).getTime() : Date.now();
-        const endTime = startTime + durationMinutes * 60 * 1000;
-
-        const timerInterval = setInterval(() => {
-            if (!this.isRunning) {
-                clearInterval(timerInterval);
-                return;
-            }
-
-            const now = Date.now();
-            const distance = endTime - now;
-
-            if (distance <= 0) {
-                clearInterval(timerInterval);
-                this.timerEl.textContent = "00:00 (Expired)";
-                this.stop();
-                showToast("Session time has elapsed. Closing session...", "warning");
-                setTimeout(() => window.location.reload(), 2000);
-                return;
-            }
-
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            this.timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }, 1000);
-    }
-
-    updateStatus(text, color) {
-        if (!this.statusIndicator) return;
-        this.statusIndicator.innerHTML = `
-            <span class="w-2.5 h-2.5 rounded-full bg-${color}-500 mr-2 ${color === 'emerald' ? 'live-indicator' : ''}"></span>
-            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">${escapeHtml(text)}</span>
-        `;
-    }
-
-    showCameraError(msg) {
-        this.updateStatus("Camera Inactive", "rose");
-        const container = document.getElementById('webcam-container-box');
-        if (container) {
-            container.innerHTML = `
-                <div class="p-8 text-center bg-rose-50 dark:bg-rose-950/40 border-2 border-dashed border-rose-300 dark:border-rose-800 rounded-2xl">
-                    <div class="w-14 h-14 mx-auto mb-4 text-rose-500 bg-rose-100 dark:bg-rose-900/50 rounded-2xl flex items-center justify-center">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">Camera Unavailable</h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto mb-6 leading-relaxed">${escapeHtml(msg)}</p>
-                    <div class="flex items-center justify-center space-x-3">
-                        <button type="button" onclick="location.reload()" class="px-4 py-2 text-sm font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 transition">
-                            Retry Camera
-                        </button>
-                        <a href="/attendance/manual/${this.sessionId}" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition">
-                            Switch to Manual Attendance
-                        </a>
-                    </div>
-                </div>
-            `;
+        if (window.App && window.App.toast) {
+            window.App.toast('success', `Marked ${student.name} (${student.roll_no}) Present`);
         }
     }
 
     stop() {
+        console.log('[RECOGNITION] Stopping recognition loop & releasing camera...');
         this.isRunning = false;
-        if (this.stream) {
-            this.stream.getTracks().forEach(track => track.stop());
-            this.stream = null;
+
+        if (this.loopInterval) {
+            clearInterval(this.loopInterval);
+            this.loopInterval = null;
         }
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        if (this.canvas) {
+            const ctx = this.canvas.getContext('2d');
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        if (window.CameraService && this.video) {
+            window.CameraService.stopCamera(this.video);
+        }
+        this.updateStatusUI('STOPPED', 'Session ended');
+    }
+
+    destroy() {
+        this.stop();
     }
 }
+
+window.LiveAttendanceManager = LiveAttendanceManager;
