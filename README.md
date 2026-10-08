@@ -10,8 +10,15 @@ An enterprise-grade, AI-powered web platform for educational institutions that a
 
 ---
 
+## 🚀 Live Demo
+
+**[🌐 Visit the Smart Attendance System](https://aravindareddy1.github.io/Smart-Attedance-System/#dashboard)**
+
+---
+
 ## 📑 Table of Contents
 
+- [Live Demo](#-live-demo)
 - [Overview](#-overview)
 - [System Architecture](#-system-architecture)
 - [Key Features](#-key-features)
