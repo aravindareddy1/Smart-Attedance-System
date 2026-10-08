@@ -200,13 +200,39 @@ def process_live_frame(session_id: int, base64_frame: str, current_user_id: int)
     late_threshold = int(get_setting('late_threshold_minutes', '10'))
     attendance_status = 'Late' if elapsed_minutes > late_threshold else 'Present'
 
-    for face in detected_faces:
+    # Phase 1: Match each detected face to its single best candidate
+    face_candidates = []
+    for face_idx, face in enumerate(detected_faces):
         box = face['box']
         candidate_encoding = engine.extract_encoding(image_bgr, box=box)
         match = engine.match_candidate(candidate_encoding, enrolled_items)
-
         if match:
-            student_id = match['student_id']
+            face_candidates.append({
+                'face_idx': face_idx,
+                'box': box,
+                'match': match,
+                'student_id': match['student_id'],
+                'confidence': match['confidence']
+            })
+        else:
+            unknown_count += 1
+            face_results.append({
+                'box': box,
+                'name': 'Unknown',
+                'roll_no': '',
+                'confidence': 0.0,
+                'matched': False
+            })
+
+    # Phase 2: Conflict resolution across multiple faces in the same frame
+    # If multiple faces claimed the same student, prioritize the one with highest confidence
+    assigned_students = set()
+    for cand in sorted(face_candidates, key=lambda c: c['confidence'], reverse=True):
+        student_id = cand['student_id']
+        box = cand['box']
+        match = cand['match']
+        if student_id not in assigned_students:
+            assigned_students.add(student_id)
             face_results.append({
                 'box': box,
                 'name': match['name'],
@@ -252,12 +278,13 @@ def process_live_frame(session_id: int, base64_frame: str, current_user_id: int)
                     # Handled duplicate safely
                     already_marked_ids.add(student_id)
         else:
+            # Weaker conflicting match for same student on another face
             unknown_count += 1
             face_results.append({
                 'box': box,
-                'name': 'Unknown',
+                'name': 'Unknown (Conflict)',
                 'roll_no': '',
-                'confidence': 0.0,
+                'confidence': cand['confidence'],
                 'matched': False
             })
 
